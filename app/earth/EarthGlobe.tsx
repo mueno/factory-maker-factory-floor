@@ -136,7 +136,7 @@ varying vec3 vPositionLocal;
 void main() {
   float edge = smoothstep(uThreshold - 0.035, uThreshold + 0.018, normalize(vPositionLocal).y);
   if (edge < 0.02) discard;
-  float texture = 0.84 + 0.16 * sin(vPositionLocal.x * 41.0) * sin(vPositionLocal.z * 37.0);
+  float texture = 0.96 + 0.04 * sin(vPositionLocal.x * 41.0) * sin(vPositionLocal.z * 37.0);
   gl_FragColor = vec4(vec3(0.72, 0.94, 1.0) * texture, edge * uOpacity);
 }`;
 
@@ -146,7 +146,7 @@ function currentCurves() {
     [[-5, -25], [-18, -10], [-35, 15], [-48, 35], [-42, 70], [-20, 92], [3, 112]],
     [[12, 132], [26, 138], [36, 145], [43, 158], [39, 178], [32, -164]],
   ];
-  return paths.map((path) => new THREE.CatmullRomCurve3(path.map(([lat, lon]) => latLon(lat, lon, 1.035)), true, 'catmullrom', 0.35));
+  return paths.map((path) => new THREE.CatmullRomCurve3(path.map(([lat, lon]) => latLon(lat, lon, 1.035)), false, 'catmullrom', 0.35));
 }
 
 function createRuntime(canvas: HTMLCanvasElement): GlobeRuntime {
@@ -225,7 +225,7 @@ function createRuntime(canvas: HTMLCanvasElement): GlobeRuntime {
   const currentTubes: THREE.Mesh<THREE.TubeGeometry, THREE.MeshBasicMaterial>[] = [];
   for (const curve of curves) {
     const tube = new THREE.Mesh(
-      new THREE.TubeGeometry(curve, 140, 0.006, 6, true),
+      new THREE.TubeGeometry(curve, 140, 0.006, 6, false),
       new THREE.MeshBasicMaterial({ color: 0x5af3eb, transparent: true, opacity: 0.42, blending: THREE.AdditiveBlending }),
     );
     currentTubes.push(tube);
