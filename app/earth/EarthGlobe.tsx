@@ -2,8 +2,6 @@
 
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import * as THREE from 'three';
-import { feature } from 'topojson-client';
-import countries from 'world-atlas/countries-110m.json';
 import type { EarthSceneState } from './science';
 import { illustrativeSeaIceForYear, REGIONS, sceneScience } from './science';
 
@@ -23,16 +21,32 @@ type GlobeRuntime = {
   camera: THREE.PerspectiveCamera;
   earth: THREE.Group;
   globe: THREE.Mesh<THREE.SphereGeometry, THREE.MeshStandardMaterial>;
+  nightLights: THREE.Mesh<THREE.SphereGeometry, THREE.ShaderMaterial>;
+  clouds: THREE.Mesh<THREE.SphereGeometry, THREE.MeshPhongMaterial>;
   evidence: THREE.Mesh<THREE.SphereGeometry, THREE.ShaderMaterial>;
   ice: THREE.Mesh<THREE.SphereGeometry, THREE.ShaderMaterial>;
-  currentPoints: THREE.Points<THREE.BufferGeometry, THREE.PointsMaterial>;
+  currentStreaks: THREE.LineSegments<THREE.BufferGeometry, THREE.LineBasicMaterial>;
+  currentParticles: CurrentParticle[];
   curves: THREE.CatmullRomCurve3[];
-  currentTubes: THREE.Mesh<THREE.TubeGeometry, THREE.MeshBasicMaterial>[];
+  currentSpeedFactor: number;
   targetQuaternion: THREE.Quaternion;
   targetDistance: number;
   frame: number;
   observer: ResizeObserver;
   destroy: () => void;
+};
+
+type CurrentPath = {
+  points: number[][];
+  scenarioSensitive?: boolean;
+};
+
+type CurrentParticle = {
+  curveIndex: number;
+  progress: number;
+  speed: number;
+  trail: number;
+  scenarioSensitive: boolean;
 };
 
 function latLon(lat: number, lon: number, radius = 1) {
@@ -48,52 +62,10 @@ function latLon(lat: number, lon: number, radius = 1) {
   );
 }
 
-function makeEarthTexture() {
-  const canvas = document.createElement('canvas');
-  canvas.width = 2048;
-  canvas.height = 1024;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return null;
-  const ocean = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  ocean.addColorStop(0, '#071a35');
-  ocean.addColorStop(0.5, '#062846');
-  ocean.addColorStop(1, '#071a35');
-  ctx.fillStyle = ocean;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  const atlas = feature(
-    countries as unknown as Parameters<typeof feature>[0],
-    (countries as unknown as { objects: { countries: Parameters<typeof feature>[1] } }).objects.countries,
-  ) as GeoJSON.FeatureCollection;
-
-  const point = ([lon, lat]: number[]) => [
-    ((lon + 180) / 360) * canvas.width,
-    ((90 - lat) / 180) * canvas.height,
-  ];
-  const drawRing = (ring: number[][]) => {
-    ring.forEach((coordinate, index) => {
-      const [x, y] = point(coordinate);
-      if (index === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    });
-    ctx.closePath();
-  };
-
-  ctx.fillStyle = '#153f4b';
-  ctx.strokeStyle = 'rgba(101, 230, 225, .48)';
-  ctx.lineWidth = 1.1;
-  for (const item of atlas.features) {
-    const geometry = item.geometry;
-    if (!geometry || (geometry.type !== 'Polygon' && geometry.type !== 'MultiPolygon')) continue;
-    const polygons = geometry.type === 'Polygon' ? [geometry.coordinates] : geometry.coordinates;
-    ctx.beginPath();
-    for (const polygon of polygons) for (const ring of polygon) drawRing(ring as number[][]);
-    ctx.fill('evenodd');
-    ctx.stroke();
-  }
-
-  const texture = new THREE.CanvasTexture(canvas);
+function loadColorTexture(path: string, anisotropy: number) {
+  const texture = new THREE.TextureLoader().load(path);
   texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = 4;
+  texture.anisotropy = anisotropy;
   return texture;
 }
 
@@ -139,13 +111,61 @@ void main() {
   gl_FragColor = vec4(vec3(0.72, 0.94, 1.0) * texture, edge * uOpacity);
 }`;
 
-function currentCurves() {
-  const paths = [
-    [[7, -42], [18, -55], [30, -70], [40, -62], [49, -42], [57, -22], [64, 4]],
-    [[-5, -25], [-18, -10], [-35, 15], [-48, 35], [-42, 70], [-20, 92], [3, 112]],
-    [[12, 132], [26, 138], [36, 145], [43, 158], [39, 178], [32, -164]],
+const NIGHT_VERTEX = `
+varying vec2 vUv;
+varying vec3 vViewNormal;
+void main() {
+  vUv = uv;
+  vViewNormal = normalize(normalMatrix * normal);
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}`;
+
+const NIGHT_FRAGMENT = `
+uniform sampler2D uNightMap;
+uniform vec3 uLightDirection;
+uniform float uIntensity;
+varying vec2 vUv;
+varying vec3 vViewNormal;
+void main() {
+  vec3 source = texture2D(uNightMap, vUv).rgb;
+  float luminance = max(source.r, max(source.g, source.b));
+  float nightSide = 1.0 - smoothstep(-0.14, 0.24, dot(normalize(vViewNormal), normalize(uLightDirection)));
+  float alpha = nightSide * smoothstep(0.025, 0.62, luminance) * uIntensity;
+  gl_FragColor = vec4(source * 1.55, alpha);
+}`;
+
+const ATMOSPHERE_VERTEX = `
+varying vec3 vViewNormal;
+void main() {
+  vViewNormal = normalize(normalMatrix * normal);
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}`;
+
+const ATMOSPHERE_FRAGMENT = `
+uniform float uStrength;
+varying vec3 vViewNormal;
+void main() {
+  float rim = pow(1.0 - abs(vViewNormal.z), 3.2);
+  gl_FragColor = vec4(0.20, 0.74, 1.0, rim * uStrength);
+}`;
+
+function currentPaths(): CurrentPath[] {
+  // Qualitative paths used to explain circulation on the globe. These are not
+  // OSCAR velocity samples and the interface labels them as a conceptual view.
+  return [
+    { scenarioSensitive: true, points: [[10, -78], [23, -76], [34, -70], [42, -57], [49, -40], [56, -24], [62, -8]] },
+    { scenarioSensitive: true, points: [[62, -8], [64, 2], [61, 13], [57, 24], [52, 33]] },
+    { scenarioSensitive: true, points: [[58, -45], [51, -50], [43, -53], [34, -55], [25, -48]] },
+    { points: [[18, 121], [24, 126], [31, 132], [35, 140], [40, 147], [44, 158], [42, 174]] },
+    { points: [[42, 174], [43, -170], [45, -150], [46, -132], [45, -118]] },
+    { points: [[55, 165], [49, 157], [43, 150], [39, 145], [35, 141]] },
+    { points: [[-12, -38], [-22, -43], [-32, -48], [-42, -53], [-49, -48]] },
+    { points: [[-38, 18], [-30, 12], [-20, 5], [-10, -2], [2, -6]] },
+    { points: [[-33, 31], [-39, 42], [-43, 58], [-38, 72], [-31, 84]] },
+    { points: [[-54, -176], [-55, -126], [-53, -76], [-51, -24], [-52, 30], [-54, 82], [-55, 132], [-54, 176]] },
+    { points: [[9, -12], [8, -38], [7, -66], [8, -96], [7, -128], [6, -158]] },
+    { points: [[-8, 154], [-7, 122], [-7, 91], [-6, 58], [-6, 25], [-7, -8]] },
   ];
-  return paths.map((path) => new THREE.CatmullRomCurve3(path.map(([lat, lon]) => latLon(lat, lon, 1.035)), false, 'catmullrom', 0.35));
 }
 
 function createRuntime(canvas: HTMLCanvasElement): GlobeRuntime {
@@ -179,17 +199,49 @@ function createRuntime(canvas: HTMLCanvasElement): GlobeRuntime {
 
   const earth = new THREE.Group();
   root.add(earth);
-  const texture = makeEarthTexture();
+  const anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  const dayTexture = loadColorTexture('/earth/blue-marble-2048.png', anisotropy);
+  const nightTexture = loadColorTexture('/earth/black-marble-2016-3600.jpg', anisotropy);
+  const cloudTexture = loadColorTexture('/earth/clouds-2048.jpg', anisotropy);
   const globeMaterial = new THREE.MeshStandardMaterial({
-    map: texture ?? undefined,
-    color: texture ? 0xffffff : 0x123c54,
-    roughness: 0.72,
-    metalness: 0.04,
-    emissive: new THREE.Color(0x061326),
-    emissiveIntensity: 0.48,
+    map: dayTexture,
+    color: 0xffffff,
+    roughness: 0.67,
+    metalness: 0.015,
   });
   const globe = new THREE.Mesh(new THREE.SphereGeometry(1, 128, 96), globeMaterial);
   earth.add(globe);
+
+  const nightLights = new THREE.Mesh(
+    new THREE.SphereGeometry(1.003, 128, 96),
+    new THREE.ShaderMaterial({
+      vertexShader: NIGHT_VERTEX,
+      fragmentShader: NIGHT_FRAGMENT,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      uniforms: {
+        uNightMap: { value: nightTexture },
+        uLightDirection: { value: new THREE.Vector3(-0.48, 0.26, 1).normalize() },
+        uIntensity: { value: 1.25 },
+      },
+    }),
+  );
+  earth.add(nightLights);
+
+  const clouds = new THREE.Mesh(
+    new THREE.SphereGeometry(1.009, 128, 96),
+    new THREE.MeshPhongMaterial({
+      map: cloudTexture,
+      alphaMap: cloudTexture,
+      color: 0xeaf7ff,
+      transparent: true,
+      opacity: 0.28,
+      depthWrite: false,
+      blending: THREE.NormalBlending,
+    }),
+  );
+  earth.add(clouds);
 
   const evidence = new THREE.Mesh(
     new THREE.SphereGeometry(1.012, 128, 96),
@@ -216,25 +268,75 @@ function createRuntime(canvas: HTMLCanvasElement): GlobeRuntime {
   earth.add(ice);
 
   const atmosphere = new THREE.Mesh(
-    new THREE.SphereGeometry(1.065, 96, 64),
-    new THREE.MeshBasicMaterial({ color: 0x50d9ff, side: THREE.BackSide, transparent: true, opacity: 0.09, blending: THREE.AdditiveBlending }),
+    new THREE.SphereGeometry(1.055, 96, 64),
+    new THREE.ShaderMaterial({
+      vertexShader: ATMOSPHERE_VERTEX,
+      fragmentShader: ATMOSPHERE_FRAGMENT,
+      transparent: true,
+      depthWrite: false,
+      side: THREE.BackSide,
+      blending: THREE.AdditiveBlending,
+      uniforms: { uStrength: { value: 0.52 } },
+    }),
   );
   earth.add(atmosphere);
+  const highAtmosphere = new THREE.Mesh(
+    new THREE.SphereGeometry(1.095, 96, 64),
+    new THREE.ShaderMaterial({
+      vertexShader: ATMOSPHERE_VERTEX,
+      fragmentShader: ATMOSPHERE_FRAGMENT,
+      transparent: true,
+      depthWrite: false,
+      side: THREE.BackSide,
+      blending: THREE.AdditiveBlending,
+      uniforms: { uStrength: { value: 0.18 } },
+    }),
+  );
+  earth.add(highAtmosphere);
 
-  const curves = currentCurves();
-  const currentTubes: THREE.Mesh<THREE.TubeGeometry, THREE.MeshBasicMaterial>[] = [];
-  for (const curve of curves) {
-    const tube = new THREE.Mesh(
-      new THREE.TubeGeometry(curve, 140, 0.006, 6, false),
-      new THREE.MeshBasicMaterial({ color: 0x5af3eb, transparent: true, opacity: 0.42, blending: THREE.AdditiveBlending }),
-    );
-    currentTubes.push(tube);
-    earth.add(tube);
-  }
+  const paths = currentPaths();
+  const curves = paths.map((path) => new THREE.CatmullRomCurve3(
+    path.points.map(([lat, lon]) => latLon(lat, lon, 1.023)),
+    false,
+    'catmullrom',
+    0.28,
+  ));
+  const particleCount = 1680;
   const currentGeometry = new THREE.BufferGeometry();
-  currentGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(150 * 3), 3));
-  const currentPoints = new THREE.Points(currentGeometry, new THREE.PointsMaterial({ color: 0xffda7a, size: 0.035, transparent: true, opacity: 0.92, blending: THREE.AdditiveBlending }));
-  earth.add(currentPoints);
+  currentGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(particleCount * 2 * 3), 3));
+  const currentColors = new Float32Array(particleCount * 2 * 3);
+  const currentParticles: CurrentParticle[] = [];
+  const cyan = new THREE.Color(0x61f7f0);
+  const gold = new THREE.Color(0xffd47a);
+  for (let i = 0; i < particleCount; i += 1) {
+    const curveIndex = i % curves.length;
+    const progress = ((i * 0.61803398875) + (curveIndex / curves.length)) % 1;
+    const speed = 0.022 + ((i * 37) % 31) / 1500;
+    const trail = 0.006 + ((i * 19) % 17) / 2100;
+    currentParticles.push({
+      curveIndex,
+      progress,
+      speed,
+      trail,
+      scenarioSensitive: Boolean(paths[curveIndex].scenarioSensitive),
+    });
+    const mix = ((i * 23) % 100) / 100;
+    const head = cyan.clone().lerp(gold, mix);
+    const tail = head.clone().multiplyScalar(0.16);
+    currentColors.set([tail.r, tail.g, tail.b, head.r, head.g, head.b], i * 6);
+  }
+  currentGeometry.setAttribute('color', new THREE.BufferAttribute(currentColors, 3));
+  const currentStreaks = new THREE.LineSegments(
+    currentGeometry,
+    new THREE.LineBasicMaterial({
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.82,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    }),
+  );
+  earth.add(currentStreaks);
 
   const targetQuaternion = new THREE.Quaternion();
   const observer = new ResizeObserver(() => {
@@ -248,7 +350,8 @@ function createRuntime(canvas: HTMLCanvasElement): GlobeRuntime {
   observer.observe(canvas);
 
   const runtime: GlobeRuntime = {
-    renderer, camera, earth, globe, evidence, ice, currentPoints, curves, currentTubes,
+    renderer, camera, earth, globe, nightLights, clouds, evidence, ice,
+    currentStreaks, currentParticles, curves, currentSpeedFactor: 1,
     targetQuaternion, targetDistance: 4.8, frame: 0, observer,
     destroy: () => {},
   };
@@ -265,12 +368,20 @@ function createRuntime(canvas: HTMLCanvasElement): GlobeRuntime {
       runtime.camera.position.z += (runtime.targetDistance - runtime.camera.position.z) * (1 - Math.pow(0.002, dt));
     }
     runtime.evidence.material.uniforms.uTime.value = reducedMotion ? 0 : now / 1000;
-    const positions = runtime.currentPoints.geometry.attributes.position as THREE.BufferAttribute;
-    for (let i = 0; i < positions.count; i += 1) {
-      const curve = runtime.curves[i % runtime.curves.length];
-      const progress = (i / positions.count * runtime.curves.length + (reducedMotion ? 0 : now / 9500)) % 1;
-      const pointOnCurve = curve.getPointAt(progress);
-      positions.setXYZ(i, pointOnCurve.x, pointOnCurve.y, pointOnCurve.z);
+    if (!reducedMotion) runtime.clouds.rotation.y += dt * 0.012;
+    const positions = runtime.currentStreaks.geometry.attributes.position as THREE.BufferAttribute;
+    for (let i = 0; i < runtime.currentParticles.length; i += 1) {
+      const particle = runtime.currentParticles[i];
+      if (!reducedMotion) {
+        const factor = particle.scenarioSensitive ? runtime.currentSpeedFactor : 1;
+        particle.progress = (particle.progress + dt * particle.speed * factor) % 1;
+      }
+      const curve = runtime.curves[particle.curveIndex];
+      const tailProgress = Math.max(0, particle.progress - particle.trail);
+      const tail = curve.getPointAt(tailProgress);
+      const head = curve.getPointAt(particle.progress);
+      positions.setXYZ(i * 2, tail.x, tail.y, tail.z);
+      positions.setXYZ(i * 2 + 1, head.x, head.y, head.z);
     }
     positions.needsUpdate = true;
     renderer.render(root, camera);
@@ -287,7 +398,9 @@ function createRuntime(canvas: HTMLCanvasElement): GlobeRuntime {
       const materials = Array.isArray(mesh.material) ? mesh.material : mesh.material ? [mesh.material] : [];
       materials.forEach((material) => material.dispose());
     });
-    texture?.dispose();
+    dayTexture.dispose();
+    nightTexture.dispose();
+    cloudTexture.dispose();
     renderer.dispose();
   };
   return runtime;
@@ -304,13 +417,16 @@ function applyScene(runtime: GlobeRuntime, scene: EarthSceneState) {
   runtime.evidence.material.uniforms.uWarming.value = science.temperature.best;
   runtime.evidence.material.uniforms.uStorybook.value = scene.style === 'storybook' ? 1 : 0;
   runtime.evidence.visible = scene.layer !== 'currents' || scene.style !== 'scientific';
-  runtime.currentPoints.visible = scene.layer === 'currents' || scene.layer === 'coupled';
-  runtime.currentTubes.forEach((tube) => { tube.visible = scene.layer === 'currents' || scene.layer === 'coupled'; });
+  runtime.currentStreaks.visible = scene.layer === 'currents' || scene.layer === 'coupled';
+  runtime.currentSpeedFactor = Math.max(0.42, 1 - science.amocDecline.best / 100);
   const extent = illustrativeSeaIceForYear(scene.year).extent;
   const capDegrees = 7 + Math.sqrt(Math.max(0.2, extent) / 7.05) * 20;
   runtime.ice.material.uniforms.uThreshold.value = Math.sin(THREE.MathUtils.degToRad(90 - capDegrees));
   runtime.ice.visible = scene.layer === 'sea_ice' || scene.layer === 'coupled';
   runtime.globe.material.roughness = scene.style === 'cinematic' ? 0.58 : 0.8;
+  runtime.clouds.material.opacity = scene.style === 'scientific' ? 0.17 : scene.style === 'storybook' ? 0.34 : 0.27;
+  runtime.nightLights.material.uniforms.uIntensity.value = scene.style === 'scientific' ? 0.9 : 1.25;
+  runtime.currentStreaks.material.opacity = scene.style === 'scientific' ? 0.68 : 0.86;
   runtime.renderer.toneMappingExposure = scene.style === 'storybook' ? 1.3 : scene.style === 'scientific' ? 0.92 : 1.1;
 }
 
