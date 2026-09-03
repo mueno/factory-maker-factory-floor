@@ -82,20 +82,31 @@ function loadColorTexture(path: string, anisotropy: number) {
 const EVIDENCE_VERTEX = `
 varying vec3 vNormalLocal;
 varying vec3 vPositionLocal;
+varying vec2 vUv;
 void main() {
   vNormalLocal = normal;
   vPositionLocal = position;
+  vUv = uv;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }`;
 
 const EVIDENCE_FRAGMENT = `
+uniform sampler2D uSstMap;
 uniform float uMode;
 uniform float uWarming;
 uniform float uTime;
 uniform float uStorybook;
 varying vec3 vNormalLocal;
 varying vec3 vPositionLocal;
+varying vec2 vUv;
 void main() {
+  vec4 observedSst = texture2D(uSstMap, vUv);
+  if (uMode < 1.5) {
+    if (observedSst.a < 0.04) discard;
+    float observedRim = pow(1.0 - max(dot(normalize(vNormalLocal), vec3(0.0, 0.0, 1.0)), 0.0), 2.0);
+    gl_FragColor = vec4(observedSst.rgb, observedSst.a * (0.52 + observedRim * 0.08));
+    return;
+  }
   float latitude = abs(normalize(vPositionLocal).y);
   float longitudeWave = sin(atan(vPositionLocal.z, vPositionLocal.x) * 5.0 + uTime * 0.08) * 0.5 + 0.5;
   vec3 cold = vec3(0.05, 0.65, 0.96);
@@ -104,21 +115,24 @@ void main() {
   vec3 thermal = mix(cold, warm, anomaly);
   vec3 sea = mix(vec3(0.0, 0.72, 0.9), vec3(0.08, 0.2, 0.5), latitude);
   vec3 level = mix(vec3(0.0, 0.78, 0.84), vec3(0.98, 0.72, 0.22), latitude * 0.6);
-  vec3 color = uMode < 1.5 ? thermal : (uMode < 2.5 ? sea : (uMode < 3.5 ? level : mix(thermal, sea, 0.45)));
+  vec3 color = uMode < 2.5 ? sea : (uMode < 3.5 ? level : mix(thermal, sea, 0.45));
   float fresnel = pow(1.0 - max(dot(normalize(vNormalLocal), vec3(0.0, 0.0, 1.0)), 0.0), 2.0);
   float alpha = (0.20 + fresnel * 0.16) * mix(1.0, 1.35, uStorybook);
   gl_FragColor = vec4(color, alpha);
 }`;
 
 const ICE_FRAGMENT = `
+uniform sampler2D uIceMap;
 uniform float uThreshold;
 uniform float uOpacity;
 varying vec3 vPositionLocal;
+varying vec2 vUv;
 void main() {
-  float edge = smoothstep(uThreshold - 0.035, uThreshold + 0.018, normalize(vPositionLocal).y);
-  if (edge < 0.02) discard;
-  float texture = 0.96 + 0.04 * sin(vPositionLocal.x * 41.0) * sin(vPositionLocal.z * 37.0);
-  gl_FragColor = vec4(vec3(0.72, 0.94, 1.0) * texture, edge * uOpacity);
+  float observedExtent = texture2D(uIceMap, vUv).r;
+  float futureContraction = smoothstep(uThreshold - 0.025, uThreshold + 0.02, normalize(vPositionLocal).y);
+  float alpha = observedExtent * futureContraction * uOpacity;
+  if (alpha < 0.02) discard;
+  gl_FragColor = vec4(0.72, 0.94, 1.0, alpha);
 }`;
 
 const NIGHT_VERTEX = `
@@ -211,6 +225,9 @@ function createRuntime(canvas: HTMLCanvasElement): GlobeRuntime {
   const dayTexture = loadColorTexture('/earth/blue-marble-2048.png', anisotropy);
   const nightTexture = loadColorTexture('/earth/black-marble-2016-3600.jpg', anisotropy);
   const cloudTexture = loadColorTexture('/earth/clouds-2048.jpg', anisotropy);
+  const sstTexture = loadColorTexture('/earth/noaa-oisst-v21-2026-08.png', anisotropy);
+  const iceTexture = new THREE.TextureLoader().load('/earth/nsidc-sea-ice-extent-2025-09.png');
+  iceTexture.anisotropy = anisotropy;
   const roughnessTexture = new THREE.TextureLoader().load('/earth/blue-marble-land-roughness-2048.png');
   const bumpTexture = new THREE.TextureLoader().load('/earth/blue-marble-shaded-bump-2048.jpg');
   roughnessTexture.anisotropy = anisotropy;
@@ -280,7 +297,13 @@ function createRuntime(canvas: HTMLCanvasElement): GlobeRuntime {
       fragmentShader: EVIDENCE_FRAGMENT,
       transparent: true,
       depthWrite: false,
-      uniforms: { uMode: { value: 4 }, uWarming: { value: 2 }, uTime: { value: 0 }, uStorybook: { value: 0 } },
+      uniforms: {
+        uSstMap: { value: sstTexture },
+        uMode: { value: 4 },
+        uWarming: { value: 2 },
+        uTime: { value: 0 },
+        uStorybook: { value: 0 },
+      },
     }),
   );
   earth.add(evidence);
@@ -292,7 +315,7 @@ function createRuntime(canvas: HTMLCanvasElement): GlobeRuntime {
       fragmentShader: ICE_FRAGMENT,
       transparent: true,
       depthWrite: false,
-      uniforms: { uThreshold: { value: 0.84 }, uOpacity: { value: 0.86 } },
+      uniforms: { uIceMap: { value: iceTexture }, uThreshold: { value: 0.84 }, uOpacity: { value: 0.86 } },
     }),
   );
   earth.add(ice);
@@ -444,6 +467,8 @@ function createRuntime(canvas: HTMLCanvasElement): GlobeRuntime {
     dayTexture.dispose();
     nightTexture.dispose();
     cloudTexture.dispose();
+    sstTexture.dispose();
+    iceTexture.dispose();
     roughnessTexture.dispose();
     bumpTexture.dispose();
     bloomPass.dispose();

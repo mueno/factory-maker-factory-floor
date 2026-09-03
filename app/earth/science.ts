@@ -48,6 +48,11 @@ export const SCIENCE_SOURCES = [
     label: 'OSCAR surface currents — July 2014 mean from six composites (NOAA CoastWatch mirror; NASA PO.DAAC archive)',
     href: 'https://coastwatch.pfeg.noaa.gov/erddap/griddap/jplOscar.html',
   },
+  {
+    id: 'noaa-oisst',
+    label: 'NOAA OISST v2.1 preliminary — August 2026 mean of 30 available daily fields',
+    href: 'https://coastwatch.pfeg.noaa.gov/erddap/griddap/ncdcOisst21NrtAgg.html',
+  },
 ] as const;
 
 export const REGIONS: Record<RegionId, { label: { en: string; ja: string }; lat: number; lon: number; distance: number }> = {
