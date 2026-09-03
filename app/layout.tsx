@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { LocaleProvider } from './i18n';
 import './globals.css';
+import './pixel.css';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -14,31 +15,31 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Factory Maker: Factory Floor',
+  title: 'Factory Maker: 16-bit Service Workshop',
   description:
-    'A shared WebMCP workbench that turns a fuzzy brief into a verified application.',
+    'A human-led WebMCP workshop where an AI crew turns a rough idea into a working, verifiable service.',
   icons: {
     icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
     shortcut: '/favicon.svg',
   },
   openGraph: {
-    title: 'Factory Maker: Factory Floor',
+    title: 'Factory Maker: 16-bit Service Workshop',
     description:
-      'From a fuzzy brief to a verified WebMCP app, with every human and agent decision visible.',
+      'Cast a rough idea into a working WebMCP service while every human and agent decision stays visible.',
     type: 'website',
     images: [
       {
         url: '/factory-floor-social-preview.png',
         width: 1536,
         height: 1024,
-        alt: 'A playful Factory Maker workshop where a person and a friendly AI robot build a service together.',
+        alt: 'A pixel-art fantasy workshop where a human mage, a fairy, and a dwarf build a WebMCP service together.',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Factory Maker: Factory Floor',
-    description: 'A shared WebMCP workbench for turning fuzzy intent into a verified app.',
+    title: 'Factory Maker: 16-bit Service Workshop',
+    description: 'A human-led WebMCP workshop for turning rough intent into a verified, working service.',
     images: ['/factory-floor-social-preview.png'],
   },
 };

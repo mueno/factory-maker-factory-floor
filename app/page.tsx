@@ -25,6 +25,8 @@ type ToolDefinition = {
   execute: (input: Record<string, unknown>, signal?: AbortSignal) => unknown | Promise<unknown>;
 };
 type ModelContext = { registerTool: (tool: ToolDefinition, options?: { signal?: AbortSignal }) => Promise<void> };
+type WorkshopEffect = 'idle' | 'crafting' | 'poof';
+type SpriteKind = 'wizard' | 'fairy' | 'dwarf';
 
 const STORAGE_KEY = 'factory-floor-state-v1';
 const demoBrief = 'I need a small tool for a consultancy to triage incoming AI project ideas. It should help people decide what to test first and keep final decisions with a human.';
@@ -41,34 +43,60 @@ const initialState: FactoryState = {
   events: [{ id: 'event-0', actor: 'system', action: 'Workspace opened', detail: 'Blank factory state created.', revision: 0, at: 'Now' }],
 };
 
+const spritePatterns: Record<SpriteKind, string[]> = {
+  wizard: [
+    '....V.......', '...VVV......', '..VVVVV.....', '.VVVVVVV....',
+    '...SSS......', '..SDSDS.....', '...SWS......', '...BBB......',
+    '..BBBBB.....', '.BBBYBBB....', '..B.B.B.....', '.BB...BB....',
+  ],
+  fairy: [
+    '.....Y......', '.C...Y...C..', '..C.SSS.C...', '...SDSDS....',
+    '..C.SSS.C...', '.CC..PPP.CC.', '..C.PPP.C...', '....PPP.....',
+    '...PPPPP....', '....P.P.....', '...P...P....', '..P.....P...',
+  ],
+  dwarf: [
+    '...RRRR.....', '..RRRRRR....', '..R....R....', '...SSSS.....',
+    '..SDSDS.....', '...OOO......', '..OOOOO.....', '...GGG......',
+    '..GGGGG.....', '.GGGHGGG....', '..G.G.G.....', '.KK...KK....',
+  ],
+};
+
+const spriteTone: Record<string, string> = {
+  V: 'violet', S: 'skin', D: 'ink', W: 'white', B: 'blue', Y: 'gold',
+  C: 'wing', P: 'pink', R: 'red', O: 'orange', G: 'green', H: 'wood', K: 'boot',
+};
+
 const COPY = {
   en: {
-    brandTag: 'A playful workshop for people and AI', protocolLive: 'WebMCP buddy online', protocolFallback: 'UI mode',
-    heroKicker: 'BUILD TOGETHER IN THE BROWSER', heroTitle: 'Turn an idea into a service you can try and inspect.',
-    heroLead: 'Turn an idea into', heroAction: 'a service you can', heroDestination: 'try and inspect.',
-    heroBody: 'Describe what you want in everyday words. The AI shapes a brief and build options; you choose, lock, and approve each important step in the same shared workspace.',
-    revision: 'CRAFT', sharedState: 'Shared with AI', trailLabel: 'CRAFT MAP',
-    stages: ['Spark', 'Route', 'Build', 'Try it'], stageNotes: ['Shape the intent', 'Choose one path', 'Lock and assemble', 'Check the proof'],
+    brandTag: 'A human-led service workshop with an AI crew', protocolLive: 'WebMCP familiar online', protocolFallback: 'UI mode',
+    heroKicker: 'A 16-BIT SERVICE WORKSHOP', heroTitle: 'Cast a rough idea into a service you can test.',
+    heroLead: 'Cast a rough idea', heroAction: 'into a service', heroDestination: 'you can test.',
+    heroBody: 'Write the idea on a shared scroll. The AI crew shapes the brief, routes, and build; you choose the route, seal the contract, and decide what moves forward.',
+    revision: 'SCROLL', sharedState: 'Shared with the crew', trailLabel: 'WORKSHOP QUEST',
+    stages: ['Spell', 'Route', 'Craft', 'Reveal'], stageNotes: ['Shape the intent', 'Choose one path', 'Seal and assemble', 'Try the result'],
     statusDone: 'Complete', statusActive: 'Now', statusWaiting: 'Waiting', human: 'HUMAN', agent: 'AGENT', both: 'HUMAN + AGENT', currentArtifact: 'CURRENT ARTIFACT',
-    requestTitle: 'Describe the service in your own words', requestBody: 'Start with the outcome you want. The agent will turn it into a short brief for your review.',
-    requestLabel: 'What should this service make possible?', requestPlaceholder: 'For example: I want a service that helps…', useExample: 'Use a fictional example',
-    dataNote: 'Your work stays in this browser. Use fictional or non-sensitive information.', organize: 'Organize this request', restage: 'Update the structured brief',
-    structuredBrief: 'STRUCTURED BRIEF', audience: 'Audience', outcome: 'Desired outcome', humanCheckpoint: 'HUMAN CHECKPOINT', acceptPrompt: 'Confirm that this brief says what you intended.', acceptBrief: 'Accept brief',
-    directionTitle: 'Choose the direction worth building', directionBody: 'The agent can prepare bounded options. Only you can select the path that becomes the build contract.',
-    directionEmpty: 'The accepted brief is ready for three traceable directions.', makeConcepts: 'Create 3 directions', selectedByYou: 'Selected by you', selectDirection: 'Select this direction',
-    buildTitle: 'Freeze the promise before the build', buildBody: 'The implementation is constrained by a visible contract. Changes after freezing require a new revision.',
-    contractEmpty: 'The selected direction is ready for a bounded build contract.', stageContract: 'Prepare build contract', contractLabel: 'BUILD CONTRACT',
+    requestTitle: 'What service will you summon?', requestBody: 'You are the workshop mage. Describe the outcome you want, and the AI crew will draft a short scroll for your review.',
+    requestLabel: 'What should this service make possible?', requestPlaceholder: 'For example: Build a small service that helps…', useExample: 'Load a sample spell',
+    dataNote: 'This scroll is stored in your browser. Use fictional or non-sensitive information.', organize: 'Shape the spell', restage: 'Rewrite the brief scroll',
+    structuredBrief: 'BRIEF SCROLL', audience: 'Audience', outcome: 'Desired outcome', humanCheckpoint: 'MAGE CHECKPOINT', acceptPrompt: 'Check that the scroll matches your intent before the crew continues.', acceptBrief: 'Approve this scroll',
+    directionTitle: 'Choose the route the crew will build', directionBody: 'The AI crew can draw three bounded routes. Only you can select the one that becomes the build contract.',
+    directionEmpty: 'The approved scroll is ready for three traceable routes.', makeConcepts: 'Draw 3 routes', selectedByYou: 'Selected by you', selectDirection: 'Take this route',
+    buildTitle: 'Seal the build scroll before crafting', buildBody: 'The visible contract limits what the crew may build. Any later change creates a new revision.',
+    contractEmpty: 'The selected route is ready for a bounded build scroll.', stageContract: 'Draft the build scroll', contractLabel: 'BUILD SCROLL',
     product: 'Product', template: 'Template', goal: 'Goal', primaryAction: 'Primary action', agentMay: 'Agent may', humanKeeps: 'Human keeps',
-    freezeBoundary: 'DECISION BOUNDARY', freezePrompt: 'Freezing locks the target and opens the generation step.', freeze: 'Freeze contract', contractFrozen: 'Contract frozen',
-    generatePrompt: 'One allowlisted template can now be generated from this exact contract.', generate: 'Generate working service',
-    verifyTitle: 'Verify the exact output', verifyBody: 'The result, its source contract, and deterministic checks stay connected by revision and output hash.',
-    generatedOutput: 'GENERATED OUTPUT', openApp: 'Open generated service',
+    freezeBoundary: 'MAGE DECISION', freezePrompt: 'Sealing fixes the target and opens the crafting step.', freeze: 'Seal the build scroll', contractFrozen: 'Build scroll sealed',
+    generatePrompt: 'The crew can now assemble one allowlisted template from this exact contract.', generate: 'Ask the crew to build',
+    craftingTitle: 'THE CREW IS CRAFTING', craftLogs: ['Pip the fairy is mapping the interface…', 'Dock the dwarf is forging the state controls…', 'The crew is locking the final pieces to this revision…'], poofTitle: 'POOF!', poofBody: 'The service is coming out of the workshop.', skipAnimation: 'Skip the scene',
+    verifyTitle: 'Unbox the service and test it', verifyBody: 'The result, its source scroll, and deterministic checks stay connected by revision and output hash.',
+    generatedOutput: 'UNBOXED SERVICE', openApp: 'Enter the service',
     verifyEmpty: 'Run checks for the frozen contract, stale writes, WebMCP, human authority, and UI read-back.', runChecks: 'Run evidence checks',
     verifiedTitle: 'Evidence attached. Human authority preserved.', verifiedBody: 'Passing these checks demonstrates this bounded workflow; it is not a production-readiness certification.',
-    operation: 'WORKSHOP BUDDY', toolsHere: 'Tools ready for this stage', operationBody: 'Your AI buddy receives only the tools needed for this stage. Any change must target the current revision.',
+    fairyName: 'PIP · INTERFACE FAIRY', fairyGuide: 'Open the blue door to try the service. You and the browser agent will see the same result.',
+    dwarfName: 'DOCK · STATE SMITH', dwarfGuide: 'The revision and output hash are bolted together. Run the checks before you approve anything.',
+    operation: 'WORKSHOP CREW', toolsHere: 'Magic tools ready now', operationBody: 'The AI crew receives only the tools needed for this stage. Any change must target the current revision.',
     read: 'READ', write: 'WRITE', toolsRegistered: 'tools registered on document.modelContext', unsupported: 'Open in a WebMCP-capable browser to expose these tools.',
-    authority: 'You hold the key decisions', authorityBody: 'The AI cannot choose a direction, freeze the contract, approve a pilot, or release an app.', latest: 'LATEST MOVE',
-    recentChanges: 'Recent changes and recovery', ledgerSummary: 'Every change has an owner and revision.', undo: 'Undo latest agent change', copy: 'Copy shared state', reset: 'Reset demo',
+    authority: 'You carry the decision key', authorityBody: 'The AI cannot choose a route, seal the contract, approve a pilot, or release an app.', latest: 'LATEST WORKSHOP MOVE',
+    recentChanges: 'Workshop log and recovery', ledgerSummary: 'Every change has an owner and revision.', undo: 'Undo latest crew change', copy: 'Copy shared state', reset: 'Reset workshop',
     resetConfirm: 'Reset the local demo state? This removes this workflow from your browser.', resetDone: 'The demo was reset on this device.', copied: 'Shared state copied to the clipboard.', agentStep: 'AGENT-AVAILABLE STEP',
     defaultAudience: 'Small teams evaluating AI-enabled service ideas', defaultOutcome: 'Choose one evidence-backed idea for a bounded pilot',
     previewBack: 'Back to Factory Maker', previewFrom: 'GENERATED FROM FROZEN CONTRACT', previewQuestion: 'Which idea deserves a pilot next?',
@@ -79,32 +107,35 @@ const COPY = {
     noScoreBody: 'Use the form or ask the browser agent to call', agentCan: 'AGENT CAN', agentCanBody: 'Read state · score a candidate · explain the result', humanKeepsBody: 'Approval · exceptions · release authority',
   },
   ja: {
-    brandTag: '人とAIのサービスものづくり工房', protocolLive: 'WebMCP 相棒AI接続中', protocolFallback: '通常UI',
-    heroKicker: 'ブラウザで一緒につくる', heroTitle: 'アイデアを、触って確かめるサービスへ。',
-    heroLead: 'アイデアを、', heroAction: '触って確かめる', heroDestination: 'サービスへ。',
-    heroBody: 'つくりたいことを普段の言葉で入力すると、AIが企画要旨と方向案を組み立てます。選ぶ・固定する・公開する判断は、同じ画面を見ながら人が行います。',
-    revision: 'クラフト', sharedState: '人とAIで共有', trailLabel: 'クラフトマップ',
-    stages: ['ひらめき', 'ルート選び', '組み立て', '動作確認'], stageNotes: ['意図を整える', '一案を選ぶ', '仕様を固定して生成', '根拠を確かめる'],
+    brandTag: '魔法使いとAI職人たちのサービス工房', protocolLive: 'WebMCP 妖精リンク ON', protocolFallback: '通常UI',
+    heroKicker: '16-BIT サービス工房', heroTitle: 'ひらめきを、動くサービスへ召喚。',
+    heroLead: 'ひらめきを、', heroAction: '動くサービスへ', heroDestination: '召喚。',
+    heroBody: '作りたいものを共有の巻物に書くと、AI職人が企画要旨、方向案、動く画面を組み立てます。進む道を選び、仕様を封印し、公開を決めるのはあなたです。',
+    revision: '巻物', sharedState: '工房で共有', trailLabel: '工房クエスト',
+    stages: ['呪文', '道しるべ', '組み立て', 'お披露目'], stageNotes: ['意図を整える', '進む道を選ぶ', '仕様を封印して生成', '完成品を試す'],
     statusDone: '完了', statusActive: '現在', statusWaiting: '待機中', human: '人', agent: 'AI', both: '人 + AI', currentArtifact: '現在の成果物',
-    requestTitle: 'まず、ひらめきを聞かせてください', requestBody: '実現したいことを、普段の言葉で書いてください。AIが短い企画要旨に整え、次のルートを考えられる形にします。',
-    requestLabel: 'このサービスで、何をできるようにしたいですか？', requestPlaceholder: '例：○○に困っている人が、△△できるサービスをつくりたい', useExample: '架空の例を使う',
-    dataNote: '入力内容はこのブラウザ内に保存されます。架空または機密性のない情報をお使いください。', organize: '依頼を整理する', restage: '企画要旨を更新する',
-    structuredBrief: '整理した企画要旨', audience: '利用する人', outcome: '実現したい結果', humanCheckpoint: '人が確認する項目', acceptPrompt: '意図どおりに整理されているか確認してください。', acceptBrief: '内容を承認する',
-    directionTitle: 'どのルートで形にするか選ぶ', directionBody: 'AIが範囲を絞った3つの方向案を用意します。実際に組み立てる一案は、画面を見ながら人が選びます。',
-    directionEmpty: '承認した企画要旨から、根拠を追える3つの方向案を作成できます。', makeConcepts: '3案を作成する', selectedByYou: '選択済み', selectDirection: 'この方向を選ぶ',
-    buildTitle: '組み立てる範囲を、先に決める', buildBody: '実装範囲を画面上の仕様書で明確にします。固定後に変える場合は、新しい版として記録します。',
-    contractEmpty: '選んだ方向から、範囲を限定した構築仕様を作成できます。', stageContract: '構築仕様を作成する', contractLabel: '構築仕様',
+    requestTitle: 'どんなサービスを\u200B召喚しますか？', requestBody: 'あなたが工房を導く魔法使いです。実現したい結果を書くと、AI職人が確認用の短い巻物にまとめます。',
+    requestLabel: 'このサービスで、何をできるようにしたいですか？', requestPlaceholder: '例：○○に困っている人が、△△できる小さなサービスを作りたい', useExample: 'おためしの呪文を読む',
+    dataNote: 'この巻物はブラウザ内に保存されます。架空または機密性のない情報をお使いください。', organize: '呪文を整える', restage: '企画の巻物を書き直す',
+    structuredBrief: '企画の巻物', audience: '利用する人', outcome: '実現したい結果', humanCheckpoint: '魔法使いの確認', acceptPrompt: 'AI職人がまとめた内容を読み、意図どおりか確かめてください。', acceptBrief: 'この巻物で進む',
+    directionTitle: '職人たちが作る道を\u200B選ぶ', directionBody: 'AI職人が範囲を絞った3つの方向案を描きます。実際に組み立てる一案は、あなたが選びます。',
+    directionEmpty: '承認した巻物から、根拠を追える3つの道を描けます。', makeConcepts: '3つの道を描く', selectedByYou: '選択済み', selectDirection: 'この道を進む',
+    buildTitle: '組み立てる範囲を\u200B巻物に封印する', buildBody: '画面上の構築仕様で、AI職人が作れる範囲を限定します。封印後の変更は、新しい版として記録します。',
+    contractEmpty: '選んだ道から、範囲を限定した構築の巻物を作れます。', stageContract: '構築の巻物を作る', contractLabel: '構築の巻物',
     product: 'サービス名', template: 'テンプレート', goal: '目的', primaryAction: '主な操作', agentMay: 'AIに任せること', humanKeeps: '人が決めること',
-    freezeBoundary: '判断の境界', freezePrompt: '固定すると構築対象が確定し、生成へ進めます。', freeze: '仕様を固定する', contractFrozen: '仕様は固定されています',
-    generatePrompt: 'この仕様だけを使い、許可済みテンプレートから動く画面を生成できます。', generate: '動くサービスを生成する',
-    verifyTitle: 'できたサービスを、触って確かめる', verifyBody: '成果物、元の仕様、検証結果を、版番号と出力ハッシュで結び付けて確認します。',
-    generatedOutput: '生成した成果物', openApp: '生成したサービスを開く',
+    freezeBoundary: '魔法使いが決める工程', freezePrompt: '封印すると構築対象が確定し、組み立てへ進めます。', freeze: '構築の巻物を封印する', contractFrozen: '構築の巻物は封印済み',
+    generatePrompt: 'この巻物だけを使い、許可済みテンプレートから動く画面を組み立てます。', generate: '職人たちに組み立てを頼む',
+    craftingTitle: '小人と妖精が組み立て中', craftLogs: ['妖精ピピが画面の配置を描いています…', '小人ドックが状態管理の歯車を鍛えています…', '職人たちが最後の部品を現在の版へ固定しています…'], poofTitle: 'ボカンッ！', poofBody: '完成したサービスが工房から飛び出します。', skipAnimation: '演出を省略して完成へ',
+    verifyTitle: '完成したサービスを\u200B開いて確かめる', verifyBody: '成果物、元の巻物、検証結果を、版番号と出力ハッシュで結び付けて確認します。',
+    generatedOutput: '工房から届いたサービス', openApp: '完成したサービスに入る',
     verifyEmpty: '固定した仕様、古い書き込みの拒否、WebMCP、人の権限、画面への反映を検証します。', runChecks: '検証を実行する',
     verifiedTitle: '根拠を添付し、人の決定権を確認しました。', verifiedBody: 'ここでの合格は、この限定された流れの確認結果です。本番運用できることを保証するものではありません。',
-    operation: '工房の相棒AI', toolsHere: 'この工程で使える道具', operationBody: '相棒AIには、この工程に必要な道具だけを渡します。変更には現在の版番号が必要です。',
+    fairyName: '妖精ピピ · 画面づくり', fairyGuide: '青い扉から完成したサービスに入れます。人とブラウザ内のAIは、同じ結果を確認できます。',
+    dwarfName: '小人ドック · 状態管理', dwarfGuide: '版番号と出力ハッシュを固定したぞ。承認する前に、検証ボタンで根拠を確かめよう。',
+    operation: '工房のAI職人たち', toolsHere: 'いま使える魔法道具', operationBody: 'AI職人には、この工程に必要な道具だけを渡します。変更には現在の版番号が必要です。',
     read: '読取', write: '変更', toolsRegistered: '個のツールを document.modelContext に登録済み', unsupported: 'WebMCP対応ブラウザで開くと、これらのツールをAIが利用できます。',
-    authority: '大切な判断は、あなたが行います', authorityBody: 'AIは方向の選択、仕様の固定、試行の承認、公開を行えません。', latest: '直近の動き',
-    recentChanges: '変更履歴とやり直し', ledgerSummary: 'すべての変更に、担当者と版番号が付きます。', undo: 'AIの直前操作を取り消す', copy: '共有状態をコピー', reset: 'デモを初期化',
+    authority: '最終決定の鍵は、あなたが持ちます', authorityBody: 'AI職人は道の選択、仕様の封印、試行の承認、公開を行えません。', latest: '工房の直近作業',
+    recentChanges: '工房日誌とやり直し', ledgerSummary: 'すべての変更に、担当者と版番号が付きます。', undo: 'AI職人の直前操作を取り消す', copy: '共有状態をコピー', reset: '工房を初期化',
     resetConfirm: 'このブラウザに保存したデモの作業内容を削除し、最初からやり直しますか？', resetDone: 'この端末のデモを初期化しました。', copied: '共有状態をクリップボードにコピーしました。', agentStep: 'AIが実行できる工程',
     defaultAudience: 'AIを活用したサービス案を検討する小規模チーム', defaultOutcome: '根拠のある一案を選び、範囲を絞った試行へ進める',
     previewBack: 'Factory Makerに戻る', previewFrom: '固定した仕様から生成', previewQuestion: '次に試す価値がある案はどれ？',
@@ -192,6 +223,16 @@ function translatedNotice(message: string, locale: Locale) {
   return messages[message] ?? message;
 }
 
+function PixelSprite({ kind, className = '' }: { kind: SpriteKind; className?: string }) {
+  return (
+    <span className={`pixel-sprite pixel-${kind} ${className}`} aria-hidden="true">
+      {spritePatterns[kind].flatMap((row, rowIndex) => row.split('').map((tone, columnIndex) => (
+        <i className={spriteTone[tone] ? `pixel-tone-${spriteTone[tone]}` : ''} key={`${rowIndex}-${columnIndex}`} />
+      )))}
+    </span>
+  );
+}
+
 export default function Home() {
   const { locale } = useLocale();
   const t = COPY[locale];
@@ -201,8 +242,11 @@ export default function Home() {
   const [registrationError, setRegistrationError] = useState<string | null>(null);
   const [view, setView] = useState<'factory' | 'preview'>('factory');
   const [notice, setNotice] = useState('Ready for a human or browser agent.');
+  const [workshopEffect, setWorkshopEffect] = useState<WorkshopEffect>('idle');
+  const [craftCountdown, setCraftCountdown] = useState(3);
   const stateRef = useRef(state);
   const mcpSupportedRef = useRef(false);
+  const craftRevisionRef = useRef<number | null>(null);
 
   useEffect(() => {
     try {
@@ -264,6 +308,26 @@ export default function Home() {
     setNotice('Working micro-app generated. Open it or run the evidence gate.');
     return { ok: true, output_hash: outputHash, next: 'run_factory_checks', revision: current.revision + 1 };
   }, [replaceState, stale]);
+  useEffect(() => {
+    if (workshopEffect === 'idle') return;
+    if (workshopEffect === 'crafting') {
+      const timer = window.setTimeout(() => {
+        if (craftCountdown > 1) setCraftCountdown((previous) => previous - 1);
+        else {
+          setCraftCountdown(0);
+          setWorkshopEffect('poof');
+        }
+      }, 1000);
+      return () => window.clearTimeout(timer);
+    }
+    const timer = window.setTimeout(() => {
+      const expectedRevision = craftRevisionRef.current;
+      setWorkshopEffect('idle');
+      craftRevisionRef.current = null;
+      if (expectedRevision !== null) generatePreview({ expected_revision: expectedRevision });
+    }, 850);
+    return () => window.clearTimeout(timer);
+  }, [craftCountdown, generatePreview, workshopEffect]);
   const runChecks = useCallback((input: Record<string, unknown>) => {
     const current = stateRef.current; const mismatch = stale(input.expected_revision, current); if (mismatch) return mismatch;
     if (!current.generated || !current.outputHash) return { ok: false, error: 'preview_not_generated', state_changed: false };
@@ -344,13 +408,30 @@ export default function Home() {
   const selectConcept = (id: string) => replaceState((previous) => { const revision = previous.revision + 1; const concept = concepts.find((item) => item.id === id); setNotice(`${concept?.label ?? 'Concept'} selected by a human.`); return { ...previous, phase: 'contract_ready', revision, selectedConceptId: id, contract: null, contractFrozen: false, generated: false, evidence: [], events: [eventFor('human', 'Concept selected', `${concept?.label ?? id} selected as the build direction.`, revision), ...previous.events] }; });
   const freezeContract = () => replaceState((previous) => { if (!previous.contract) return previous; const revision = previous.revision + 1; setNotice('Contract frozen by a human. The build tool is now available.'); return { ...previous, phase: 'build_ready', revision, contractFrozen: true, events: [eventFor('human', 'Contract frozen', 'Build authority is bound to this immutable revision.', revision), ...previous.events] }; });
   const approvePilot = () => replaceState((previous) => { if (previous.previewResult?.lane !== 'Run a pilot' || previous.pilotApproved) return previous; const revision = previous.revision + 1; setNotice('Pilot approved by a human and recorded in the shared ledger.'); return { ...previous, revision, pilotApproved: true, events: [eventFor('human', 'Pilot approved', `${previous.previewResult.name} approved for a bounded pilot.`, revision), ...previous.events] }; });
-  const resetFactory = () => { if (!window.confirm(t.resetConfirm)) return; stateRef.current = initialState; setState(initialState); setView('factory'); window.localStorage.removeItem(STORAGE_KEY); setNotice('Factory reset to a clean demo state.'); };
+  const resetFactory = () => { if (!window.confirm(t.resetConfirm)) return; stateRef.current = initialState; setState(initialState); setView('factory'); setWorkshopEffect('idle'); setCraftCountdown(3); craftRevisionRef.current = null; window.localStorage.removeItem(STORAGE_KEY); setNotice('Factory reset to a clean demo state.'); };
   const copyState = async () => { try { await navigator.clipboard.writeText(JSON.stringify(publicState(state), null, 2)); setNotice('Shared state copied to clipboard.'); } catch { setNotice('Clipboard access was unavailable.'); } };
+  const startWorkshopBuild = () => {
+    const expectedRevision = state.revision;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      generatePreview({ expected_revision: expectedRevision });
+      return;
+    }
+    craftRevisionRef.current = expectedRevision;
+    setCraftCountdown(3);
+    setWorkshopEffect('crafting');
+  };
+  const finishWorkshopBuild = () => {
+    const expectedRevision = craftRevisionRef.current ?? state.revision;
+    craftRevisionRef.current = null;
+    setWorkshopEffect('idle');
+    generatePreview({ expected_revision: expectedRevision });
+  };
 
   if (view === 'preview' && state.generated) return <GeneratedPreview state={state} mcpSupported={mcpSupported} registeredTools={registeredTools} scoreCandidate={scoreCandidate} approvePilot={approvePilot} onBack={() => setView('factory')} />;
 
   const stageOwners = [t.both, t.human, t.both, t.both];
-  const stageIcons = ['✦', '➜', '◆', '✓'];
+  const stageIcons = ['✦', '➜', '⚒', '★'];
+  const craftLogIndex = Math.min(t.craftLogs.length - 1, Math.max(0, 3 - craftCountdown));
   const currentTitles = [t.requestTitle, t.directionTitle, t.buildTitle, t.verifyTitle];
   const currentBodies = [t.requestBody, t.directionBody, t.buildBody, t.verifyBody];
   const visibleNotice = registrationError ?? (
@@ -369,7 +450,10 @@ export default function Home() {
       <div className="product-page">
         <section className="product-hero">
           <div className="hero-copy"><p className="hero-kicker"><span aria-hidden="true">✦</span>{t.heroKicker}</p><h1 aria-label={t.heroTitle}><span className="hero-lead">{t.heroLead}{locale === 'en' ? ' ' : null}</span><span className="hero-build-line"><span className="hero-action">{t.heroAction}</span>{locale === 'en' ? ' ' : null}<wbr /><span className="hero-destination">{t.heroDestination}</span></span></h1><p>{t.heroBody}</p></div>
-          <div className="revision-badge" aria-label={`${t.revision} ${state.revision}`}><span>{t.revision}</span><strong>r{state.revision}</strong><small>{t.sharedState}</small></div>
+          <div className="hero-visual">
+            <div className="hero-sprite-scene" aria-hidden="true"><span className="pixel-star star-one">✦</span><span className="pixel-star star-two">✦</span><PixelSprite kind="wizard" className="hero-wizard" /><PixelSprite kind="fairy" className="hero-fairy" /><PixelSprite kind="dwarf" className="hero-dwarf" /><span className="pixel-worktable"><i /><b /><em /></span></div>
+            <div className="revision-badge" aria-label={`${t.revision} ${state.revision}`}><span>{t.revision}</span><strong>r{state.revision}</strong><small>{t.sharedState}</small></div>
+          </div>
         </section>
         <section className="trail-section" aria-labelledby="trail-title">
           <div className="section-label-row"><span id="trail-title">{t.trailLabel}</span><b>r{state.revision}</b></div>
@@ -399,16 +483,17 @@ export default function Home() {
                 <div><dt>{t.goal}</dt><dd>{selectedConcept ? conceptForDisplay(selectedConcept, locale).promise : state.contract.goal}</dd></div><div><dt>{t.primaryAction}</dt><dd>{selectedConcept ? conceptForDisplay(selectedConcept, locale).primaryAction : state.contract.primaryAction}</dd></div>
                 <div><dt>{t.agentMay}</dt><dd>{locale === 'ja' ? '状態の読取、候補の採点、推奨案の下書き。' : state.contract.agentPermission}</dd></div><div className="human-contract"><dt>{t.humanKeeps}</dt><dd>{locale === 'ja' ? '試行の承認と、成果物を公開する最終判断。' : state.contract.humanBoundary}</dd></div>
               </dl></div>
-              {!state.contractFrozen ? <HumanAction eyebrow={t.freezeBoundary} body={t.freezePrompt} action={t.freeze} onClick={freezeContract} /> : <div className="generation-step"><div><span>✓ {t.contractFrozen}</span><p>{t.generatePrompt}</p></div><button className="primary-button" type="button" onClick={() => generatePreview({ expected_revision: state.revision })}><span aria-hidden="true">✦</span>{t.generate}</button></div>}
+              {!state.contractFrozen ? <HumanAction eyebrow={t.freezeBoundary} body={t.freezePrompt} action={t.freeze} onClick={freezeContract} /> : workshopEffect === 'idle' ? <div className="generation-step"><div><span>✓ {t.contractFrozen}</span><p>{t.generatePrompt}</p></div><button className="primary-button" type="button" onClick={startWorkshopBuild}><span aria-hidden="true">⚒</span>{t.generate}</button></div> : <WorkshopAnimation effect={workshopEffect} countdown={craftCountdown} title={t.craftingTitle} log={t.craftLogs[craftLogIndex]} poofTitle={t.poofTitle} poofBody={t.poofBody} skipLabel={t.skipAnimation} onSkip={finishWorkshopBuild} />}
             </>}</div>}
             {activeStage === 3 && <div className="artifact-content">
               <div className="generated-card"><div className="generated-thumb" aria-hidden="true"><span /><div><i /><i /><i /></div><b>Decision Board</b></div><div><span>{t.generatedOutput}</span><h3>{selectedConcept ? conceptForDisplay(selectedConcept, locale).label : state.contract?.productName}</h3><code>{state.outputHash}</code></div><button type="button" onClick={() => setView('preview')}>{t.openApp} ↗</button></div>
+              <div className="crew-guides"><article><PixelSprite kind="fairy" /><div><strong>{t.fairyName}</strong><p>{t.fairyGuide}</p></div></article><article><PixelSprite kind="dwarf" /><div><strong>{t.dwarfName}</strong><p>{t.dwarfGuide}</p></div></article></div>
               {state.evidence.length === 0 ? <EmptyStage label={t.verifyEmpty} action={t.runChecks} eyebrow={t.agentStep} onClick={() => runChecks({ expected_revision: state.revision })} /> : <div className="evidence-list">{state.evidence.map((rawItem) => { const item = translatedEvidence(rawItem, locale); return <article className={item.status} key={item.id}><span aria-hidden="true">{item.status === 'pass' ? '✓' : '!'}</span><div><strong>{item.label}</strong><p>{item.detail}</p></div><em>{item.status === 'pass' ? (locale === 'ja' ? '合格' : 'PASS') : (locale === 'ja' ? '要確認' : 'CHECK')}</em></article>; })}</div>}
               {state.phase === 'verified' && <div className="verified-banner"><span>✓</span><div><strong>{t.verifiedTitle}</strong><p>{t.verifiedBody}</p></div></div>}
             </div>}
           </section>
           <aside className="operation-panel companion-panel" aria-label={t.operation}>
-            <header><div className="agent-avatar" aria-hidden="true"><span>AI</span></div><div><span>{t.operation}</span><strong>{t.toolsHere}</strong></div><i className={`online-dot ${mcpSupported ? '' : 'offline'}`} aria-hidden="true" /></header>
+            <header><div className="agent-avatar" aria-hidden="true"><PixelSprite kind="fairy" /></div><div><span>{t.operation}</span><strong>{t.toolsHere}</strong></div><i className={`online-dot ${mcpSupported ? '' : 'offline'}`} aria-hidden="true" /></header>
             <p>{t.operationBody}</p><div className="operation-tools">{activeToolNames.map((name) => <div key={name}><span className={name.startsWith('read_') ? 'read' : 'write'}>{name.startsWith('read_') ? t.read : t.write}</span><code>{name}</code></div>)}</div>
             <small className="registration-readback">{mcpSupported ? `${registeredTools.length}/${activeToolNames.length} ${t.toolsRegistered}` : t.unsupported}</small>
             <div className="authority-card"><span aria-hidden="true">◇</span><div><strong>{t.authority}</strong><p>{t.authorityBody}</p></div></div>
@@ -425,6 +510,24 @@ export default function Home() {
 function ActorBadge({ label, type }: { label: string; type: 'human' | 'both' }) { return <span className={`actor-badge ${type}`}><i aria-hidden="true" />{label}</span>; }
 function HumanAction({ eyebrow, body, action, onClick }: { eyebrow: string; body: string; action: string; onClick: () => void }) { return <div className="human-action"><div><span>{eyebrow}</span><p>{body}</p></div><button type="button" onClick={onClick}>{action}</button></div>; }
 function EmptyStage({ label, action, eyebrow, onClick }: { label: string; action: string; eyebrow: string; onClick: () => void }) { return <div className="empty-stage"><div><span>{eyebrow}</span><p>{label}</p></div><button type="button" onClick={onClick}>✦ {action}</button></div>; }
+
+function WorkshopAnimation({ effect, countdown, title, log, poofTitle, poofBody, skipLabel, onSkip }: { effect: WorkshopEffect; countdown: number; title: string; log: string; poofTitle: string; poofBody: string; skipLabel: string; onSkip: () => void }) {
+  if (effect === 'poof') return (
+    <div className="workshop-animation poof" role="status" aria-live="assertive">
+      <div className="pixel-poof" aria-hidden="true"><i /><i /><i /><i /><span className="pixel-gift"><b /><em /></span></div>
+      <strong>{poofTitle}</strong><p>{poofBody}</p>
+    </div>
+  );
+  return (
+    <div className="workshop-animation crafting" role="status" aria-live="polite">
+      <header><span>{title}</span><strong aria-label={`${countdown}`}>{countdown}</strong></header>
+      <div className="working-crew" aria-hidden="true"><PixelSprite kind="fairy" className="working-fairy" /><span className="pixel-anvil"><i /><b /></span><PixelSprite kind="dwarf" className="working-dwarf" /></div>
+      <div className="craft-log"><span aria-hidden="true">›</span><p>{log}</p></div>
+      <div className={`craft-progress step-${countdown}`} aria-hidden="true"><i /></div>
+      <button type="button" onClick={onSkip}>{skipLabel}</button>
+    </div>
+  );
+}
 
 function GeneratedPreview({ state, mcpSupported, registeredTools, scoreCandidate, approvePilot, onBack }: { state: FactoryState; mcpSupported: boolean; registeredTools: string[]; scoreCandidate: (input: Record<string, unknown>) => unknown; approvePilot: () => void; onBack: () => void }) {
   const { locale } = useLocale(); const t = COPY[locale];
