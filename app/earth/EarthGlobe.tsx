@@ -2,6 +2,10 @@
 
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import * as THREE from 'three';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import oscarStreamlines from './data/oscar-july-2014-streamlines.json';
 import type { EarthSceneState } from './science';
 import { illustrativeSeaIceForYear, REGIONS, sceneScience } from './science';
@@ -19,6 +23,8 @@ export type EarthGlobeHandle = {
 
 type GlobeRuntime = {
   renderer: THREE.WebGLRenderer;
+  composer: EffectComposer;
+  bloomPass: UnrealBloomPass;
   camera: THREE.PerspectiveCamera;
   earth: THREE.Group;
   globe: THREE.Mesh<THREE.SphereGeometry, THREE.MeshStandardMaterial>;
@@ -176,7 +182,7 @@ function createRuntime(canvas: HTMLCanvasElement): GlobeRuntime {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.1;
+  renderer.toneMappingExposure = 0.72;
 
   const root = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
@@ -363,19 +369,29 @@ function createRuntime(canvas: HTMLCanvasElement): GlobeRuntime {
   );
   earth.add(currentStreaks);
 
+  const composer = new EffectComposer(renderer);
+  // Keep post-processing at one device pixel per CSS pixel. On Retina screens
+  // this halves each bloom dimension relative to the renderer's 2x ceiling.
+  composer.setPixelRatio(Math.min(1, window.devicePixelRatio));
+  composer.addPass(new RenderPass(root, camera));
+  const bloomPass = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.42, 0.16, 1.65);
+  composer.addPass(bloomPass);
+  composer.addPass(new OutputPass());
+
   const targetQuaternion = new THREE.Quaternion();
   const observer = new ResizeObserver(() => {
     const rect = canvas.getBoundingClientRect();
     const width = Math.max(1, Math.round(rect.width));
     const height = Math.max(1, Math.round(rect.height));
     renderer.setSize(width, height, false);
+    composer.setSize(width, height);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
   });
   observer.observe(canvas);
 
   const runtime: GlobeRuntime = {
-    renderer, camera, earth, globe, nightShade, nightLights, clouds, evidence, ice,
+    renderer, composer, bloomPass, camera, earth, globe, nightShade, nightLights, clouds, evidence, ice,
     currentStreaks, currentParticles, curves, currentSpeedFactor: 1,
     targetQuaternion, targetDistance: 4.8, frame: 0, observer,
     destroy: () => {},
@@ -411,7 +427,7 @@ function createRuntime(canvas: HTMLCanvasElement): GlobeRuntime {
       positions.setXYZ(i * 2 + 1, head.x, head.y, head.z);
     }
     positions.needsUpdate = true;
-    renderer.render(root, camera);
+    composer.render();
     runtime.frame += 1;
     raf = requestAnimationFrame(animate);
   };
@@ -430,6 +446,8 @@ function createRuntime(canvas: HTMLCanvasElement): GlobeRuntime {
     cloudTexture.dispose();
     roughnessTexture.dispose();
     bumpTexture.dispose();
+    bloomPass.dispose();
+    composer.dispose();
     renderer.dispose();
   };
   return runtime;
@@ -456,7 +474,8 @@ function applyScene(runtime: GlobeRuntime, scene: EarthSceneState) {
   runtime.clouds.material.opacity = scene.style === 'scientific' ? 0.17 : scene.style === 'storybook' ? 0.34 : 0.27;
   runtime.nightLights.material.uniforms.uIntensity.value = scene.style === 'scientific' ? 0.9 : 1.25;
   runtime.currentStreaks.material.opacity = scene.style === 'scientific' ? 0.68 : 0.86;
-  runtime.renderer.toneMappingExposure = scene.style === 'storybook' ? 1.3 : scene.style === 'scientific' ? 0.92 : 1.1;
+  runtime.bloomPass.strength = scene.style === 'scientific' ? 0.4 : scene.style === 'storybook' ? 0.41 : 0.42;
+  runtime.renderer.toneMappingExposure = scene.style === 'storybook' ? 0.82 : scene.style === 'scientific' ? 0.62 : 0.72;
 }
 
 const MIN_DISTANCE = 2.35;
