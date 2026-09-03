@@ -83,7 +83,8 @@ const COPY = {
     displayIntro: 'These choices change the explanation, not the underlying values.',
     assessedRange: 'IPCC assessed range',
     explanatory: 'Explanatory view',
-    observed: 'Observation-led view',
+    observed: 'Observed',
+    illustrative: 'Illustrative',
   },
   ja: {
     brand: 'TERRA',
@@ -133,7 +134,8 @@ const COPY = {
     displayIntro: 'ここで変わるのは説明の仕方です。数値そのものは変わりません。',
     assessedRange: 'IPCCの評価幅',
     explanatory: '変化を理解するための表示',
-    observed: '観測値をもとにした表示',
+    observed: '観測値',
+    illustrative: '説明用表示',
   },
 } as const;
 
@@ -415,6 +417,7 @@ export function EarthExperience() {
   const regionKeys: RegionId[] = ['global', 'arctic', 'north_atlantic', 'europe', 'japan'];
   const styleKeys: RenderStyle[] = ['cinematic', 'scientific', 'storybook'];
   const source = currentSourceFor(scene.layer);
+  const seaIceBasisLabel = scene.year <= 2025 ? t.observed : t.illustrative;
   const modelContextReady = registered.length === EARTH_TOOL_NAMES.length;
   const onWorldCapability = useCallback(() => undefined, []);
   const onWorldHandle = useCallback((handle: WorldHandle | null) => { worldRef.current = handle; }, []);
@@ -457,7 +460,7 @@ export function EarthExperience() {
           <p>{narration(scene, locale)}</p>
           <div className="terra-highlight">
             {scene.layer === 'temperature' && <><strong>+{fixed(science.temperature.best)}°C</strong><span>{fixed(science.temperature.low)}–{fixed(science.temperature.high)}°C · {t.assessedRange}</span></>}
-            {scene.layer === 'sea_ice' && <><strong>{fixed(science.seaIceDisplay.extent, 2)} million km²</strong><span>{t.explanatory}</span></>}
+            {scene.layer === 'sea_ice' && <><strong>{fixed(science.seaIceDisplay.extent, 2)} million km²</strong><span className="terra-basis-badge">{seaIceBasisLabel}</span></>}
             {scene.layer === 'currents' && <><strong>−{fixed(science.amocDecline.best)}%</strong><span>{fixed(science.amocDecline.low)}–{fixed(science.amocDecline.high)}% · {t.assessedRange}</span></>}
             {scene.layer === 'sea_level' && <><strong>+{fixed(science.seaLevel.best, 2)}m</strong><span>{fixed(science.seaLevel.low, 2)}–{fixed(science.seaLevel.high, 2)}m · {t.assessedRange}</span></>}
             {scene.layer === 'coupled' && <><strong>+{fixed(science.temperature.best)}°C</strong><span>{source}</span></>}
@@ -527,6 +530,7 @@ export function EarthExperience() {
                   <section className="terra-data-summary">
                     <small>{t.currentData}</small>
                     <strong>{t[scene.layer]} · {scene.year}</strong>
+                    {scene.layer === 'sea_ice' && <em className="terra-basis-badge">{seaIceBasisLabel}</em>}
                     <p>{narration(scene, locale)}</p>
                     <span>{source}</span>
                   </section>

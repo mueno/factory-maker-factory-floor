@@ -251,6 +251,25 @@ html:has(.terra-shell) body {
   font-size: 9px;
 }
 
+.terra-basis-badge {
+  background: rgba(104, 248, 238, .09);
+  border: 1px solid rgba(104, 248, 238, .32);
+  border-radius: 999px;
+  color: var(--cyan) !important;
+  display: inline-flex !important;
+  font-size: 9px !important;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1;
+  margin-top: 8px;
+  padding: 6px 9px;
+  width: fit-content;
+}
+
+.terra-highlight .terra-basis-badge {
+  margin-top: 0;
+}
+
 .terra-inline-link {
   background: none;
   border: 0;
