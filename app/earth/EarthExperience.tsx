@@ -84,6 +84,7 @@ const COPY = {
     assessedRange: 'IPCC assessed range',
     explanatory: 'Explanatory view',
     amocReduced: 'Reduced display based on the scenario-specific CMIP6 ensemble mean',
+    seaLevelReduced: 'Reduced-order display',
     observed: 'Observed',
     illustrative: 'Illustrative',
   },
@@ -136,6 +137,7 @@ const COPY = {
     assessedRange: 'IPCCの評価幅',
     explanatory: '変化を理解するための表示',
     amocReduced: 'シナリオ別CMIP6モデル平均をもとにした簡略表示',
+    seaLevelReduced: '簡略表示',
     observed: '観測値',
     illustrative: '説明用表示',
   },
@@ -495,7 +497,7 @@ export function EarthExperience() {
             {scene.layer === 'temperature' && <><strong>+{fixed(science.temperature.best)}°C</strong><span>{fixed(science.temperature.low)}–{fixed(science.temperature.high)}°C · {t.assessedRange}</span></>}
             {scene.layer === 'sea_ice' && <><strong>{fixed(science.seaIceDisplay.extent, 2)} million km²</strong><span className="terra-basis-badge">{seaIceBasisLabel}</span></>}
             {scene.layer === 'currents' && <><strong>−{fixed(science.amocDecline.best)}%</strong><span>{t.amocReduced}</span></>}
-            {scene.layer === 'sea_level' && <><strong>+{fixed(science.seaLevel.best, 2)}m</strong><span>{fixed(science.seaLevel.low, 2)}–{fixed(science.seaLevel.high, 2)}m · {t.assessedRange}</span></>}
+            {scene.layer === 'sea_level' && <><strong>+{fixed(science.seaLevel.best, 2)}m</strong><span>{fixed(science.seaLevel.low, 2)}–{fixed(science.seaLevel.high, 2)}m · {t.assessedRange}</span><em className="terra-basis-badge">{t.seaLevelReduced}</em></>}
             {scene.layer === 'coupled' && <><strong>+{fixed(science.temperature.best)}°C</strong><span>{source}</span></>}
           </div>
           <button className="terra-inline-link" onClick={() => setDrawer('data')}>{t.data} <span aria-hidden="true">↗</span></button>
