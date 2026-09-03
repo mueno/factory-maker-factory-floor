@@ -463,7 +463,7 @@ export function EarthExperience() {
   return (
     <main className={`terra-shell terra-${scene.style}`}>
       <section className="terra-stage" aria-label={t.tag}>
-        <EarthGlobe ref={globeRef} scene={scene} onCapability={setGlobeReady} ariaLabel={t.interaction} />
+        <EarthGlobe ref={globeRef} scene={scene} onCapability={setGlobeReady} />
 
         <header className="terra-header">
           <div className="terra-brand">

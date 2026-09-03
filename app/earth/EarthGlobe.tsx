@@ -10,7 +10,6 @@ import { illustrativeSeaIceForYear, REGIONS, sceneScience } from './science';
 type GlobeProps = {
   scene: EarthSceneState;
   onCapability?: (ready: boolean) => void;
-  ariaLabel?: string;
 };
 
 export type EarthGlobeHandle = {
@@ -323,7 +322,7 @@ function clampDistance(distance: number) {
 }
 
 export const EarthGlobe = forwardRef<EarthGlobeHandle, GlobeProps>(function EarthGlobe(
-  { scene, onCapability, ariaLabel = 'Interactive three-dimensional Earth visualization' },
+  { scene, onCapability },
   ref,
 ) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -445,5 +444,5 @@ export const EarthGlobe = forwardRef<EarthGlobeHandle, GlobeProps>(function Eart
     if (runtimeRef.current) applyScene(runtimeRef.current, scene);
   }, [scene]);
 
-  return <canvas ref={canvasRef} className="terra-globe" aria-label={ariaLabel} role="img" tabIndex={0} />;
+  return <canvas ref={canvasRef} className="terra-globe" aria-label="Three-dimensional Earth visualization" role="img" tabIndex={0} />;
 });
