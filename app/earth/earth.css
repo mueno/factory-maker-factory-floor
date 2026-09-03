@@ -696,6 +696,39 @@ html:has(.terra-shell) body {
   justify-content: space-between;
 }
 
+.terra-place-control {
+  margin-top: 20px;
+}
+
+.terra-place-control > span {
+  color: #8fa6b7;
+  display: block;
+  font-size: 10px;
+  margin-bottom: 9px;
+}
+
+.terra-place-control > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.terra-place-control button {
+  background: rgba(255, 255, 255, .035);
+  border: 1px solid rgba(146, 188, 212, .16);
+  border-radius: 999px;
+  color: #9db1bf;
+  cursor: pointer;
+  min-height: 44px;
+  padding: 0 14px;
+}
+
+.terra-place-control button.active {
+  background: rgba(104, 248, 238, .08);
+  border-color: rgba(104, 248, 238, .45);
+  color: var(--cyan);
+}
+
 .terra-choice-cards {
   display: grid;
   gap: 9px;

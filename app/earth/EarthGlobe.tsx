@@ -39,10 +39,13 @@ type GlobeRuntime = {
 function latLon(lat: number, lon: number, radius = 1) {
   const phi = THREE.MathUtils.degToRad(lat);
   const theta = THREE.MathUtils.degToRad(lon);
+  // SphereGeometry maps increasing texture U eastward onto negative Z.
+  // Keep geographic longitude aligned with the equirectangular texture
+  // mapping x = (lon + 180) / 360 used by makeEarthTexture().
   return new THREE.Vector3(
     radius * Math.cos(phi) * Math.cos(theta),
     radius * Math.sin(phi),
-    radius * Math.cos(phi) * Math.sin(theta),
+    -radius * Math.cos(phi) * Math.sin(theta),
   );
 }
 

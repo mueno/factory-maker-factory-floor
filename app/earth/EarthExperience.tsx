@@ -58,6 +58,7 @@ const COPY = {
     storybook: 'Explain simply',
     data: 'Sources',
     conditions: 'Time & assumptions',
+    places: 'Place',
     display: 'How to explore',
     close: 'Close',
     reset: 'Return to selected place',
@@ -107,6 +108,7 @@ const COPY = {
     storybook: 'やさしく読む',
     data: '資料',
     conditions: '年代と前提',
+    places: '場所',
     display: '表示',
     close: '閉じる',
     reset: '選んだ場所に戻る',
@@ -410,6 +412,7 @@ export function EarthExperience() {
 
   const science = sceneScience(scene);
   const layerKeys: LayerId[] = ['coupled', 'temperature', 'sea_ice', 'currents', 'sea_level'];
+  const regionKeys: RegionId[] = ['global', 'arctic', 'north_atlantic', 'europe', 'japan'];
   const styleKeys: RenderStyle[] = ['cinematic', 'scientific', 'storybook'];
   const source = currentSourceFor(scene.layer);
   const modelContextReady = registered.length === EARTH_TOOL_NAMES.length;
@@ -558,6 +561,16 @@ export function EarthExperience() {
                       onChange={(event) => host.setScenario(scene.scenario, Number(event.target.value), sceneRef.current.revision)}
                     />
                     <div className="terra-range-labels"><span>2030</span><span>2100</span></div>
+                  </section>
+                  <section className="terra-place-control">
+                    <span>{t.places}</span>
+                    <div>
+                      {regionKeys.map((region) => (
+                        <button key={region} className={scene.region === region ? 'active' : ''} onClick={() => host.focus(region, sceneRef.current.revision)}>
+                          {t[region]}
+                        </button>
+                      ))}
+                    </div>
                   </section>
                   <div className="terra-choice-cards">
                     {(Object.keys(SCENARIOS) as ScenarioId[]).map((id) => (
