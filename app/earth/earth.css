@@ -1,40 +1,1023 @@
-html:has(.terra-shell), html:has(.terra-shell) body { background: #020711; }
-.terra-shell { --cyan: #5ff5ee; --gold: #ffd887; --navy: #050b18; background: #020711; color: #f4fbff; min-height: 100vh; }
-.terra-stage { background: radial-gradient(circle at 45% 45%, rgba(13,65,103,.24), transparent 38%), linear-gradient(180deg,#020611,#050b18); height: 100svh; min-height: 720px; overflow: hidden; position: relative; }
-.terra-stage::after { background: radial-gradient(ellipse at center, transparent 34%, rgba(0,0,0,.66) 100%); content: ''; inset: 0; pointer-events: none; position: absolute; z-index: 2; }
-.terra-globe { height: 100%; inset: 0; position: absolute; width: 100%; z-index: 1; }
-.terra-header { align-items: center; display: flex; justify-content: space-between; left: 0; padding: 22px clamp(20px,3vw,48px); position: absolute; right: 0; top: 0; z-index: 6; }
-.terra-brand { align-items: center; display: flex; gap: 12px; }
-.terra-brand > span { color: var(--cyan); font-size: 26px; text-shadow: 0 0 24px var(--cyan); }
-.terra-brand strong,.terra-brand small { display: block; }.terra-brand strong { font-size: 24px; letter-spacing: .16em; }.terra-brand small { color: #8fa7bd; font-size: 10px; margin-top: 2px; }
-.terra-header-actions { align-items: center; display: flex; gap: 9px; }
-.terra-science-badge,.terra-source-chip { backdrop-filter: blur(16px); background: rgba(9,21,39,.68); border: 1px solid rgba(142,190,221,.3); border-radius: 8px; color: #dfeef7; font-size: 10px; letter-spacing: .05em; padding: 10px 13px; }
-.terra-science-badge { border-color: rgba(95,245,238,.55); }.terra-science-badge i { background: var(--cyan); border-radius: 50%; box-shadow: 0 0 12px var(--cyan); display: inline-block; height: 7px; margin-right: 8px; width: 7px; }
-.terra-shell .language-switch { background: rgba(9,21,39,.68); border-color: rgba(142,190,221,.3); }.terra-shell .language-switch button { color: #aabccc; }.terra-shell .language-switch button[aria-pressed=true] { background: #dffbf8; color: #06222a; }
-.terra-intro { left: clamp(20px,3vw,48px); max-width: 360px; position: absolute; top: 112px; z-index: 5; }
-.terra-intro p { color: var(--cyan); font-size: 9px; font-weight: 800; letter-spacing: .2em; margin: 0 0 12px; text-transform: uppercase; }.terra-intro h1 { font-size: clamp(27px,3vw,45px); letter-spacing: -.045em; line-height: 1.02; margin: 0; text-wrap: balance; }.terra-intro > span { color: #9fb1c2; display: block; font-size: 11px; line-height: 1.65; margin-top: 12px; }
-.terra-panel { backdrop-filter: blur(22px); background: linear-gradient(150deg,rgba(17,38,66,.86),rgba(6,15,29,.8)); border: 1px solid rgba(139,189,224,.3); border-radius: 14px; box-shadow: 0 22px 65px rgba(0,0,0,.38); padding: 0 15px 15px; position: absolute; right: clamp(20px,3vw,48px); top: 90px; width: min(286px,27vw); z-index: 6; }
-.terra-panel-title { align-items: center; border-bottom: 1px solid rgba(166,204,228,.16); display: flex; justify-content: space-between; padding: 15px 2px 12px; }.terra-panel-title strong { font-size: 12px; }.terra-panel-title span { color: var(--cyan); font: 10px var(--font-geist-mono); }
-.terra-layer-list { display: grid; }.terra-layer-list button { align-items: center; background: transparent; border: 0; border-bottom: 1px solid rgba(166,204,228,.12); color: #dceaf4; cursor: pointer; display: grid; gap: 9px; grid-template-columns: 21px 1fr; padding: 9px 2px; text-align: left; }.terra-layer-list button > i { background: #23435e; border: 1px solid #55748b; border-radius: 999px; height: 12px; position: relative; width: 20px; }.terra-layer-list button > i::after { background: #71889a; border-radius: 50%; content: ''; height: 8px; left: 1px; position: absolute; top: 1px; transition: .2s; width: 8px; }.terra-layer-list button.active > i { background: rgba(33,220,218,.35); border-color: var(--cyan); box-shadow: 0 0 16px rgba(95,245,238,.35); }.terra-layer-list button.active > i::after { background: var(--cyan); left: 9px; }.terra-layer-list strong,.terra-layer-list small { display: block; }.terra-layer-list strong { font-size: 11px; }.terra-layer-list small { color: #7691a6; font-size: 8px; margin-top: 2px; }
-.terra-control-group { margin-top: 12px; }.terra-control-group label { color: #7791a7; display: block; font-size: 8px; font-weight: 800; letter-spacing: .12em; margin-bottom: 7px; text-transform: uppercase; }.terra-chips,.terra-segmented { display: flex; flex-wrap: wrap; gap: 5px; }.terra-chips button,.terra-segmented button { background: rgba(255,255,255,.04); border: 1px solid rgba(167,201,223,.18); border-radius: 999px; color: #8da4b7; cursor: pointer; font-size: 8px; padding: 5px 8px; }.terra-chips button.active,.terra-segmented button.active { background: rgba(95,245,238,.12); border-color: rgba(95,245,238,.55); color: var(--cyan); }
-.terra-control-group select { background: #0b1a2d; border: 1px solid #284058; border-radius: 7px; color: #dfeef7; font-size: 9px; padding: 7px; width: 100%; }.terra-control-group input[type=range] { accent-color: var(--cyan); width: 100%; }
-.terra-metrics { backdrop-filter: blur(16px); bottom: 164px; display: flex; gap: 1px; left: 50%; position: absolute; transform: translateX(-50%); z-index: 5; }.terra-metrics > div { background: rgba(5,17,32,.72); border: 1px solid rgba(137,187,216,.19); min-width: 138px; padding: 9px 12px; }.terra-metrics > div:first-child { border-radius: 10px 0 0 10px; }.terra-metrics > div:last-child { border-radius: 0 10px 10px 0; }.terra-metrics small,.terra-metrics strong,.terra-metrics span { display: block; }.terra-metrics small { color: #718ca3; font-size: 7px; letter-spacing: .06em; }.terra-metrics strong { color: white; font-size: 17px; margin-top: 2px; }.terra-metrics span { color: var(--cyan); font-size: 8px; }
-.terra-command { align-items: center; backdrop-filter: blur(22px); background: linear-gradient(145deg,rgba(13,32,55,.9),rgba(5,14,27,.86)); border: 1px solid rgba(135,185,216,.34); border-radius: 15px; bottom: 28px; box-shadow: 0 18px 50px rgba(0,0,0,.38); display: grid; gap: 13px; grid-template-columns: 54px minmax(280px,520px) auto; left: 50%; padding: 12px 14px; position: absolute; transform: translateX(-50%); z-index: 7; }
-.terra-mic { background: radial-gradient(circle,#38dedb,#0d7984); border: 1px solid #83fff5; border-radius: 50%; box-shadow: 0 0 0 6px rgba(65,231,226,.1),0 0 28px rgba(65,231,226,.5); color: white; cursor: pointer; font-size: 13px; height: 48px; width: 48px; }.terra-mic.active { animation: terraPulse 1s infinite; background: radial-gradient(circle,#ffdf82,#bc7a1d); }
-.terra-command-body { min-width: 0; }.terra-wave { align-items: center; display: flex; gap: 2px; height: 25px; opacity: .75; }.terra-wave i { background: linear-gradient(#ffd878,#5ff5ee); display: block; transform: scaleY(.35); transition: .2s; width: 2px; }.terra-wave.active i { animation: terraWave .7s ease-in-out infinite alternate; }.terra-command-body form { display: flex; gap: 7px; }.terra-command-body input { background: transparent; border: 0; border-bottom: 1px solid rgba(123,175,205,.28); color: white; font-size: 11px; min-width: 0; outline: 0; padding: 4px 1px 6px; width: 100%; }.terra-command-body input::placeholder { color: #6d879b; }.terra-command-body form button { background: rgba(95,245,238,.13); border: 1px solid rgba(95,245,238,.45); border-radius: 7px; color: var(--cyan); cursor: pointer; font-size: 9px; padding: 4px 9px; }.terra-command-body p { color: #7891a5; font-size: 8px; margin: 5px 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.terra-audio-controls { display: grid; gap: 5px; }.terra-audio-controls button { background: rgba(255,255,255,.04); border: 1px solid rgba(171,205,226,.18); border-radius: 999px; color: #7891a5; cursor: pointer; font-size: 8px; padding: 5px 8px; white-space: nowrap; }.terra-audio-controls button.active { border-color: rgba(255,216,135,.55); color: var(--gold); }
-.terra-ledger { backdrop-filter: blur(16px); background: rgba(6,17,32,.74); border: 1px solid rgba(127,173,203,.26); border-radius: 10px; bottom: 28px; left: clamp(20px,3vw,48px); padding: 10px 13px; position: absolute; width: 250px; z-index: 6; }.terra-ledger > div { display: flex; justify-content: space-between; }.terra-ledger strong { font-size: 9px; }.terra-ledger small { color: #6f8ba0; font-size: 8px; }.terra-ledger ul { color: #9cb5c7; font: 8px/1.7 var(--font-geist-mono); list-style: none; margin: 8px 0 0; padding: 0; }
-.terra-story { background: rgba(255,216,135,.09); border: 1px solid rgba(255,216,135,.48); border-radius: 999px; bottom: 112px; color: var(--gold); cursor: pointer; font-size: 9px; left: clamp(20px,3vw,48px); padding: 8px 12px; position: absolute; z-index: 6; }
-.terra-error { background: #7b2f31; border-radius: 8px; left: 50%; padding: 9px 12px; position: absolute; top: 80px; transform: translateX(-50%); z-index: 9; }
-.terra-evidence { background: linear-gradient(180deg,#07101e,#0a1628); border-top: 1px solid rgba(112,168,201,.2); display: grid; gap: 40px; grid-template-columns: minmax(0,1fr) minmax(360px,1fr); padding: 72px clamp(22px,6vw,96px); }.terra-evidence p { color: var(--cyan); font-size: 9px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; }.terra-evidence h2 { font-size: clamp(23px,2.6vw,38px); letter-spacing: -.035em; line-height: 1.25; margin: 13px 0; text-wrap: balance; }.terra-evidence > div > span { color: #8ba1b4; font-size: 11px; line-height: 1.6; }.terra-source-grid { display: grid; gap: 8px; }.terra-source-grid a { background: rgba(255,255,255,.035); border: 1px solid rgba(132,181,210,.15); border-radius: 10px; color: #bed1df; display: flex; flex-direction: column; padding: 13px; text-decoration: none; }.terra-source-grid a:hover { border-color: rgba(95,245,238,.5); }.terra-source-grid strong { font-size: 10px; }.terra-source-grid span { color: var(--cyan); font-size: 8px; margin-top: 5px; }
-.terra-shell .site-footer { background: #050b15; border-top-color: rgba(124,174,204,.18); color: #7790a4; }.terra-shell .footer-brand { color: white; }
-.terra-storybook .terra-panel,.terra-storybook .terra-command { background: rgba(8,29,47,.92); }.terra-storybook .terra-intro h1 { color: #fff4ba; }.terra-scientific .terra-stage { background: #020b13; }
-@keyframes terraPulse { 50% { box-shadow: 0 0 0 13px rgba(65,231,226,0),0 0 36px rgba(255,216,135,.65); } }
-@keyframes terraWave { to { transform: scaleY(1); } }
-@media (max-width: 900px) {
-  .terra-stage { height: auto; min-height: 1100px; }.terra-header { align-items: flex-start; }.terra-source-chip { display: none; }.terra-intro { max-width: calc(100% - 40px); top: 92px; }.terra-intro > span { max-width: 320px; }.terra-globe { height: 600px; top: 125px; }.terra-panel { bottom: 215px; left: 20px; right: 20px; top: auto; width: auto; }.terra-layer-list { grid-template-columns: repeat(5,1fr); }.terra-layer-list button { display: block; padding: 9px 5px; text-align: center; }.terra-layer-list button > i { display: inline-block; margin-bottom: 4px; }.terra-metrics { bottom: 552px; max-width: calc(100% - 40px); width: max-content; }.terra-ledger,.terra-story { display: none; }.terra-command { bottom: 25px; grid-template-columns: 50px 1fr; left: 20px; right: 20px; transform: none; }.terra-audio-controls { grid-column: 1/-1; grid-template-columns: 1fr 1fr; }.terra-evidence { grid-template-columns: 1fr; }
+html:has(.terra-shell),
+html:has(.terra-shell) body {
+  background: #020711;
 }
-@media (max-width: 600px) {
-  .terra-header { padding: 14px; }.terra-brand strong { font-size: 17px; }.terra-science-badge { font-size: 7px; padding: 8px; }.terra-header-actions .language-switch { display: none; }.terra-intro { left: 16px; top: 78px; }.terra-intro h1 { font-size: 28px; }.terra-globe { height: 480px; top: 120px; }.terra-stage { min-height: 1080px; }.terra-panel { bottom: 205px; left: 12px; padding: 0 10px 11px; right: 12px; }.terra-layer-list { grid-template-columns: repeat(3,1fr); }.terra-layer-list button:nth-child(n+4) { border-bottom: 0; }.terra-metrics { bottom: 556px; }.terra-metrics > div { min-width: 100px; padding: 7px; }.terra-metrics strong { font-size: 14px; }.terra-command { bottom: 16px; left: 12px; right: 12px; }.terra-command-body p { white-space: normal; }.terra-evidence { padding: 50px 20px; }
+
+.terra-shell {
+  --cyan: #68f8ee;
+  --cyan-soft: rgba(104, 248, 238, .12);
+  --gold: #ffdc8e;
+  --ink: #f5fbff;
+  --muted: #9bb0c2;
+  --panel: rgba(7, 17, 32, .72);
+  background: #020711;
+  color: var(--ink);
+  min-height: 100vh;
 }
-@media (prefers-reduced-motion: reduce) { .terra-mic.active,.terra-wave.active i { animation: none; } }
+
+.terra-stage {
+  background:
+    radial-gradient(circle at 52% 46%, rgba(23, 95, 135, .2), transparent 34%),
+    radial-gradient(circle at 85% 10%, rgba(70, 39, 124, .12), transparent 25%),
+    linear-gradient(180deg, #020611 0%, #040a15 100%);
+  height: 100svh;
+  min-height: 720px;
+  overflow: hidden;
+  position: relative;
+}
+
+.terra-stage::after {
+  background:
+    linear-gradient(90deg, rgba(1, 5, 13, .62) 0%, transparent 34%, transparent 78%, rgba(1, 5, 13, .24) 100%),
+    linear-gradient(180deg, rgba(1, 5, 13, .38) 0%, transparent 20%, transparent 72%, rgba(1, 5, 13, .7) 100%);
+  content: '';
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 2;
+}
+
+.terra-globe {
+  cursor: grab;
+  height: 100%;
+  inset: 0;
+  outline: none;
+  position: absolute;
+  touch-action: none;
+  width: 100%;
+  z-index: 1;
+}
+
+.terra-globe.is-grabbing {
+  cursor: grabbing;
+}
+
+.terra-globe:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: -4px;
+}
+
+.terra-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  left: 0;
+  padding: 22px clamp(20px, 3vw, 48px);
+  position: absolute;
+  right: 0;
+  top: 0;
+  z-index: 9;
+}
+
+.terra-brand {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+}
+
+.terra-brand > span {
+  color: var(--cyan);
+  font-size: 24px;
+  text-shadow: 0 0 26px rgba(104, 248, 238, .72);
+}
+
+.terra-brand strong,
+.terra-brand small {
+  display: block;
+}
+
+.terra-brand strong {
+  font-size: 21px;
+  letter-spacing: .18em;
+}
+
+.terra-brand small {
+  color: #8ca2b6;
+  font-size: 10px;
+  margin-top: 2px;
+}
+
+.terra-header-actions {
+  align-items: center;
+  display: flex;
+  gap: 9px;
+}
+
+.terra-science-button {
+  align-items: center;
+  backdrop-filter: blur(20px);
+  background: rgba(8, 20, 36, .56);
+  border: 1px solid rgba(145, 193, 219, .24);
+  border-radius: 999px;
+  color: #dfeef7;
+  cursor: pointer;
+  display: flex;
+  font-size: 10px;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 15px;
+  transition: background .2s, border-color .2s, transform .2s;
+}
+
+.terra-science-button:hover {
+  background: rgba(13, 34, 56, .78);
+  border-color: rgba(104, 248, 238, .48);
+  transform: translateY(-1px);
+}
+
+.terra-science-button i,
+.terra-agent-status i {
+  background: var(--cyan);
+  border-radius: 50%;
+  box-shadow: 0 0 14px rgba(104, 248, 238, .8);
+  display: inline-block;
+  height: 7px;
+  width: 7px;
+}
+
+.terra-shell .language-switch {
+  backdrop-filter: blur(20px);
+  background: rgba(8, 20, 36, .56);
+  border-color: rgba(145, 193, 219, .24);
+}
+
+.terra-shell .language-switch button {
+  color: #aabccc;
+}
+
+.terra-shell .language-switch button[aria-pressed=true] {
+  background: #e4fffc;
+  color: #06252a;
+}
+
+.terra-topics {
+  backdrop-filter: blur(22px);
+  background: rgba(5, 15, 28, .52);
+  border: 1px solid rgba(147, 193, 219, .2);
+  border-radius: 999px;
+  display: flex;
+  gap: 3px;
+  left: 50%;
+  padding: 4px;
+  position: absolute;
+  top: 84px;
+  transform: translateX(-50%);
+  z-index: 8;
+}
+
+.terra-topics button {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: #839aae;
+  cursor: pointer;
+  font-size: 10px;
+  min-height: 44px;
+  padding: 0 15px;
+  transition: .2s ease;
+  white-space: nowrap;
+}
+
+.terra-topics button:hover {
+  color: white;
+}
+
+.terra-topics button.active {
+  background: rgba(104, 248, 238, .11);
+  border-color: rgba(104, 248, 238, .34);
+  box-shadow: inset 0 0 18px rgba(104, 248, 238, .05);
+  color: var(--cyan);
+}
+
+.terra-story-card {
+  left: clamp(20px, 4.2vw, 68px);
+  max-width: 370px;
+  position: absolute;
+  top: 29%;
+  z-index: 7;
+}
+
+.terra-context-line {
+  align-items: center;
+  color: var(--cyan);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 9px;
+  font-weight: 750;
+  gap: 8px;
+  letter-spacing: .08em;
+  margin-bottom: 13px;
+  text-transform: uppercase;
+}
+
+.terra-context-line span:not(:last-child)::after {
+  color: rgba(151, 186, 207, .45);
+  content: '·';
+  margin-left: 8px;
+}
+
+.terra-story-card h1 {
+  font-size: clamp(30px, 3.5vw, 54px);
+  letter-spacing: -.052em;
+  line-height: 1.03;
+  margin: 0;
+  text-wrap: balance;
+}
+
+.terra-story-card > p {
+  color: #a9bac8;
+  font-size: 12px;
+  line-height: 1.75;
+  margin: 17px 0 0;
+  max-width: 350px;
+  text-wrap: pretty;
+}
+
+.terra-highlight {
+  align-items: baseline;
+  display: flex;
+  gap: 11px;
+  margin-top: 18px;
+}
+
+.terra-highlight strong {
+  color: #fff;
+  font-size: 23px;
+  letter-spacing: -.03em;
+}
+
+.terra-highlight span {
+  color: #7f99ac;
+  font-size: 9px;
+}
+
+.terra-inline-link {
+  background: none;
+  border: 0;
+  color: var(--cyan);
+  cursor: pointer;
+  font-size: 10px;
+  margin-top: 10px;
+  min-height: 44px;
+  padding: 8px 0;
+}
+
+.terra-inline-link:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.terra-zoom {
+  backdrop-filter: blur(20px);
+  background: rgba(5, 15, 28, .58);
+  border: 1px solid rgba(148, 191, 217, .23);
+  border-radius: 16px;
+  display: grid;
+  padding: 4px;
+  position: absolute;
+  right: clamp(18px, 3vw, 46px);
+  top: 45%;
+  transform: translateY(-50%);
+  z-index: 8;
+}
+
+.terra-zoom button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 12px;
+  color: #c9d8e2;
+  cursor: pointer;
+  display: flex;
+  font: 20px/1 var(--font-geist-sans);
+  height: 46px;
+  justify-content: center;
+  transition: .2s ease;
+  width: 46px;
+}
+
+.terra-zoom button + button {
+  border-top: 1px solid rgba(149, 189, 213, .14);
+  border-radius: 0;
+}
+
+.terra-zoom button:hover {
+  background: var(--cyan-soft);
+  color: var(--cyan);
+}
+
+.terra-gesture-hint {
+  align-items: center;
+  backdrop-filter: blur(18px);
+  background: rgba(8, 20, 35, .7);
+  border: 1px solid rgba(154, 197, 222, .23);
+  border-radius: 999px;
+  bottom: 176px;
+  color: #b9cad6;
+  cursor: pointer;
+  display: flex;
+  font-size: 10px;
+  gap: 8px;
+  left: 50%;
+  min-height: 44px;
+  padding: 0 14px;
+  position: absolute;
+  transform: translateX(-50%);
+  z-index: 7;
+}
+
+.terra-gesture-hint span {
+  color: var(--cyan);
+  font-size: 14px;
+}
+
+.terra-conductor {
+  bottom: 25px;
+  left: 50%;
+  max-width: 790px;
+  position: absolute;
+  transform: translateX(-50%);
+  width: calc(100% - 40px);
+  z-index: 9;
+}
+
+.terra-suggestions {
+  display: flex;
+  gap: 7px;
+  justify-content: center;
+  margin-bottom: 9px;
+}
+
+.terra-suggestions button {
+  backdrop-filter: blur(15px);
+  background: rgba(6, 18, 34, .62);
+  border: 1px solid rgba(144, 190, 217, .22);
+  border-radius: 999px;
+  color: #a9bdcb;
+  cursor: pointer;
+  font-size: 9px;
+  min-height: 44px;
+  padding: 0 12px;
+}
+
+.terra-suggestions button:hover {
+  border-color: rgba(104, 248, 238, .5);
+  color: white;
+}
+
+.terra-prompt-shell {
+  align-items: center;
+  backdrop-filter: blur(28px) saturate(120%);
+  background:
+    linear-gradient(145deg, rgba(15, 35, 57, .92), rgba(5, 14, 28, .9)) padding-box,
+    linear-gradient(115deg, rgba(104, 248, 238, .55), rgba(134, 114, 255, .25), rgba(255, 220, 142, .5)) border-box;
+  border: 1px solid transparent;
+  border-radius: 24px;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .42), 0 0 42px rgba(66, 206, 214, .08);
+  display: grid;
+  gap: 9px;
+  grid-template-columns: 50px minmax(240px, 1fr) auto auto;
+  padding: 9px;
+}
+
+.terra-mic {
+  background: radial-gradient(circle at 38% 32%, #8ffff8, #138c98 62%, #07515e);
+  border: 1px solid #9cfff8;
+  border-radius: 17px;
+  box-shadow: 0 0 0 5px rgba(104, 248, 238, .07), 0 0 25px rgba(104, 248, 238, .25);
+  color: white;
+  cursor: pointer;
+  font-size: 11px;
+  height: 48px;
+  width: 48px;
+}
+
+.terra-mic.active {
+  animation: terraPulse 1s ease-in-out infinite;
+  background: radial-gradient(circle at 38% 32%, #fff5bd, #d69a2d 68%, #70420b);
+}
+
+.terra-prompt-shell form {
+  align-items: center;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 42px;
+  min-width: 0;
+}
+
+.terra-prompt-shell input {
+  background: transparent;
+  border: 0;
+  color: white;
+  font-size: 13px;
+  min-width: 0;
+  outline: 0;
+  padding: 0 10px;
+  width: 100%;
+}
+
+.terra-prompt-shell input::placeholder {
+  color: #8198aa;
+}
+
+.terra-prompt-shell form > button {
+  background: #e8fffd;
+  border: 0;
+  border-radius: 13px;
+  color: #08323a;
+  cursor: pointer;
+  font-size: 20px;
+  height: 42px;
+  transition: transform .18s, background .18s;
+  width: 42px;
+}
+
+.terra-prompt-shell form > button:hover {
+  background: white;
+  transform: translateY(-1px);
+}
+
+.terra-control-pill {
+  background: rgba(255, 255, 255, .045);
+  border: 1px solid rgba(158, 197, 219, .17);
+  border-radius: 15px;
+  color: #9fb5c5;
+  cursor: pointer;
+  font-size: 9px;
+  min-height: 44px;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+
+.terra-control-pill:hover {
+  background: rgba(104, 248, 238, .08);
+  border-color: rgba(104, 248, 238, .35);
+  color: white;
+}
+
+.terra-conductor > p {
+  color: #6f879a;
+  font-size: 9px;
+  margin: 7px 14px 0;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.terra-conductor > p.is-notice {
+  color: var(--gold);
+}
+
+.terra-agent-status {
+  align-items: center;
+  bottom: 34px;
+  color: #6f8799;
+  display: flex;
+  font-size: 9px;
+  gap: 8px;
+  left: clamp(18px, 3vw, 46px);
+  position: absolute;
+  z-index: 7;
+}
+
+.terra-agent-status:not(.connected) i {
+  background: #6e8392;
+  box-shadow: none;
+}
+
+.terra-error {
+  background: #7b2f31;
+  border-radius: 12px;
+  left: 50%;
+  padding: 10px 14px;
+  position: absolute;
+  top: 142px;
+  transform: translateX(-50%);
+  z-index: 12;
+}
+
+.terra-drawer-scrim {
+  background: rgba(0, 4, 12, .55);
+  border: 0;
+  inset: 0;
+  position: absolute;
+  z-index: 18;
+}
+
+.terra-drawer {
+  backdrop-filter: blur(34px) saturate(125%);
+  background: linear-gradient(155deg, rgba(14, 31, 50, .97), rgba(4, 12, 24, .98));
+  border-left: 1px solid rgba(143, 190, 216, .24);
+  bottom: 0;
+  box-shadow: -30px 0 90px rgba(0, 0, 0, .45);
+  max-width: 480px;
+  overflow: auto;
+  padding: 26px;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: min(92vw, 480px);
+  z-index: 19;
+}
+
+.terra-drawer-header {
+  align-items: flex-start;
+  display: flex;
+  justify-content: space-between;
+}
+
+.terra-drawer-header small {
+  color: var(--cyan);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .18em;
+}
+
+.terra-drawer-header h2 {
+  font-size: 25px;
+  letter-spacing: -.035em;
+  margin: 8px 0 0;
+}
+
+.terra-drawer-header > button {
+  background: rgba(255, 255, 255, .05);
+  border: 1px solid rgba(160, 198, 220, .2);
+  border-radius: 14px;
+  color: white;
+  cursor: pointer;
+  font-size: 23px;
+  height: 46px;
+  width: 46px;
+}
+
+.terra-drawer-content {
+  padding-top: 34px;
+}
+
+.terra-drawer-lead {
+  color: #a5b7c5;
+  font-size: 13px;
+  line-height: 1.75;
+  margin: 0 0 24px;
+}
+
+.terra-data-summary {
+  background: rgba(104, 248, 238, .055);
+  border: 1px solid rgba(104, 248, 238, .2);
+  border-radius: 20px;
+  padding: 20px;
+}
+
+.terra-data-summary small,
+.terra-data-summary strong,
+.terra-data-summary span {
+  display: block;
+}
+
+.terra-data-summary small {
+  color: var(--cyan);
+  font-size: 9px;
+  letter-spacing: .08em;
+}
+
+.terra-data-summary strong {
+  font-size: 17px;
+  margin-top: 7px;
+}
+
+.terra-data-summary p {
+  color: #aec0cd;
+  font-size: 11px;
+  line-height: 1.7;
+  margin: 12px 0;
+}
+
+.terra-data-summary span {
+  color: #7892a6;
+  font-size: 9px;
+}
+
+.terra-source-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.terra-source-list a {
+  align-items: center;
+  background: rgba(255, 255, 255, .035);
+  border: 1px solid rgba(143, 184, 208, .14);
+  border-radius: 15px;
+  color: #bdd0dc;
+  display: flex;
+  font-size: 10px;
+  gap: 12px;
+  justify-content: space-between;
+  line-height: 1.45;
+  min-height: 50px;
+  padding: 10px 14px;
+  text-decoration: none;
+}
+
+.terra-source-list a:hover {
+  border-color: rgba(104, 248, 238, .4);
+  color: white;
+}
+
+.terra-source-list b {
+  color: var(--cyan);
+}
+
+.terra-limit {
+  border-left: 2px solid rgba(255, 220, 142, .7);
+  color: #91a6b6;
+  font-size: 10px;
+  line-height: 1.65;
+  margin: 22px 0;
+  padding-left: 12px;
+}
+
+.terra-activity {
+  border-top: 1px solid rgba(143, 184, 208, .15);
+  color: #9eb2c1;
+  font-size: 10px;
+  padding-top: 18px;
+}
+
+.terra-activity summary {
+  cursor: pointer;
+}
+
+.terra-activity > div {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 14px;
+}
+
+.terra-activity ul {
+  color: #7690a3;
+  font: 9px/1.8 var(--font-geist-mono);
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+}
+
+.terra-year-control {
+  background: rgba(255, 255, 255, .035);
+  border: 1px solid rgba(146, 188, 212, .16);
+  border-radius: 20px;
+  padding: 18px;
+}
+
+.terra-year-control > div:first-child {
+  align-items: baseline;
+  display: flex;
+  justify-content: space-between;
+}
+
+.terra-year-control span {
+  color: #8fa6b7;
+  font-size: 10px;
+}
+
+.terra-year-control strong {
+  color: white;
+  font-size: 31px;
+}
+
+.terra-year-control input {
+  accent-color: var(--cyan);
+  margin: 18px 0 5px;
+  width: 100%;
+}
+
+.terra-range-labels {
+  display: flex;
+  justify-content: space-between;
+}
+
+.terra-choice-cards {
+  display: grid;
+  gap: 9px;
+  margin-top: 14px;
+}
+
+.terra-choice-cards button {
+  align-items: center;
+  background: rgba(255, 255, 255, .035);
+  border: 1px solid rgba(146, 188, 212, .16);
+  border-radius: 16px;
+  color: #93a9b9;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  min-height: 60px;
+  padding: 0 17px;
+  text-align: left;
+}
+
+.terra-choice-cards button span {
+  font-size: 10px;
+}
+
+.terra-choice-cards button strong {
+  color: #d9e6ee;
+  font-size: 12px;
+}
+
+.terra-choice-cards button.active {
+  background: rgba(104, 248, 238, .08);
+  border-color: rgba(104, 248, 238, .45);
+}
+
+.terra-choice-cards button.active strong,
+.terra-choice-cards button.active span {
+  color: var(--cyan);
+}
+
+.terra-display-cards button {
+  justify-content: flex-start;
+}
+
+.terra-display-cards button span {
+  color: var(--cyan);
+  font-size: 22px;
+  width: 42px;
+}
+
+.terra-sound-controls {
+  display: grid;
+  gap: 9px;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 20px;
+}
+
+.terra-sound-controls button {
+  background: rgba(255, 255, 255, .035);
+  border: 1px solid rgba(146, 188, 212, .16);
+  border-radius: 15px;
+  color: #8fa5b5;
+  cursor: pointer;
+  min-height: 48px;
+}
+
+.terra-sound-controls button.active {
+  border-color: rgba(255, 220, 142, .48);
+  color: var(--gold);
+}
+
+.terra-below {
+  background:
+    radial-gradient(circle at 20% 0%, rgba(31, 92, 127, .18), transparent 33%),
+    linear-gradient(180deg, #07101e, #091526);
+  border-top: 1px solid rgba(112, 168, 201, .17);
+  padding: 84px clamp(22px, 8vw, 130px);
+  text-align: center;
+}
+
+.terra-below p {
+  color: var(--cyan);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .16em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.terra-below h2 {
+  font-size: clamp(23px, 3vw, 42px);
+  letter-spacing: -.04em;
+  line-height: 1.3;
+  margin: 17px auto 24px;
+  max-width: 900px;
+  text-wrap: balance;
+}
+
+.terra-below button {
+  background: rgba(104, 248, 238, .09);
+  border: 1px solid rgba(104, 248, 238, .42);
+  border-radius: 999px;
+  color: var(--cyan);
+  cursor: pointer;
+  min-height: 46px;
+  padding: 0 18px;
+}
+
+.terra-shell .site-footer {
+  background: #050b15;
+  border-top-color: rgba(124, 174, 204, .18);
+  color: #7790a4;
+}
+
+.terra-shell .footer-brand {
+  color: white;
+}
+
+.terra-storybook .terra-story-card h1 {
+  color: #fff1b5;
+}
+
+.terra-scientific .terra-stage {
+  background: #020b13;
+}
+
+@keyframes terraPulse {
+  50% {
+    box-shadow: 0 0 0 12px rgba(104, 248, 238, 0), 0 0 34px rgba(255, 220, 142, .62);
+  }
+}
+
+@media (max-width: 1080px) {
+  .terra-story-card {
+    max-width: 310px;
+  }
+
+  .terra-story-card h1 {
+    font-size: 36px;
+  }
+
+  .terra-agent-status {
+    display: none;
+  }
+}
+
+@media (max-width: 820px) {
+  .terra-stage {
+    min-height: 820px;
+  }
+
+  .terra-header {
+    padding: 15px 17px;
+  }
+
+  .terra-science-button span {
+    display: none;
+  }
+
+  .terra-science-button {
+    border-radius: 14px;
+    justify-content: center;
+    padding: 0;
+    width: 44px;
+  }
+
+  .terra-topics {
+    left: 13px;
+    max-width: calc(100% - 26px);
+    overflow-x: auto;
+    scrollbar-width: none;
+    top: 72px;
+    transform: none;
+  }
+
+  .terra-topics::-webkit-scrollbar {
+    display: none;
+  }
+
+  .terra-story-card {
+    left: 20px;
+    max-width: min(330px, calc(100% - 40px));
+    top: 142px;
+  }
+
+  .terra-story-card h1 {
+    font-size: 34px;
+  }
+
+  .terra-story-card > p {
+    font-size: 11px;
+    line-height: 1.6;
+    max-width: 310px;
+  }
+
+  .terra-zoom {
+    right: 14px;
+    top: 47%;
+  }
+
+  .terra-gesture-hint {
+    bottom: 174px;
+  }
+
+  .terra-prompt-shell {
+    grid-template-columns: 48px minmax(0, 1fr);
+  }
+
+  .terra-control-pill {
+    display: none;
+  }
+
+  .terra-conductor {
+    bottom: 16px;
+    width: calc(100% - 24px);
+  }
+
+  .terra-suggestions {
+    justify-content: flex-start;
+    overflow-x: auto;
+    padding: 0 3px;
+    scrollbar-width: none;
+  }
+
+  .terra-suggestions::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .terra-stage {
+    min-height: 760px;
+  }
+
+  .terra-brand strong {
+    font-size: 17px;
+  }
+
+  .terra-brand small {
+    font-size: 8px;
+  }
+
+  .terra-shell .language-switch {
+    display: none;
+  }
+
+  .terra-story-card {
+    top: 132px;
+  }
+
+  .terra-context-line {
+    font-size: 8px;
+    margin-bottom: 9px;
+  }
+
+  .terra-story-card h1 {
+    font-size: 29px;
+    max-width: 300px;
+  }
+
+  .terra-story-card > p {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
+  .terra-highlight {
+    margin-top: 10px;
+  }
+
+  .terra-highlight strong {
+    font-size: 19px;
+  }
+
+  .terra-zoom {
+    top: 53%;
+  }
+
+  .terra-zoom button {
+    height: 44px;
+    width: 44px;
+  }
+
+  .terra-gesture-hint {
+    bottom: 161px;
+    font-size: 8px;
+    max-width: calc(100% - 30px);
+    white-space: nowrap;
+  }
+
+  .terra-prompt-shell {
+    border-radius: 20px;
+    gap: 5px;
+    padding: 7px;
+  }
+
+  .terra-prompt-shell input {
+    font-size: 11px;
+    padding-left: 8px;
+  }
+
+  .terra-conductor > p {
+    font-size: 8px;
+    white-space: normal;
+  }
+
+  .terra-drawer {
+    border-left: 0;
+    border-radius: 24px 24px 0 0;
+    height: min(82svh, 720px);
+    max-width: none;
+    top: auto;
+    width: 100%;
+  }
+
+  .terra-below {
+    padding: 58px 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .terra-mic.active {
+    animation: none;
+  }
+}

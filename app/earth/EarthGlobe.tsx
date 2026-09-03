@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import * as THREE from 'three';
 import { feature } from 'topojson-client';
 import countries from 'world-atlas/countries-110m.json';
@@ -10,6 +10,13 @@ import { illustrativeSeaIceForYear, REGIONS, sceneScience } from './science';
 type GlobeProps = {
   scene: EarthSceneState;
   onCapability?: (ready: boolean) => void;
+  ariaLabel?: string;
+};
+
+export type EarthGlobeHandle = {
+  zoomIn: () => void;
+  zoomOut: () => void;
+  resetView: () => void;
 };
 
 type GlobeRuntime = {
@@ -21,9 +28,9 @@ type GlobeRuntime = {
   ice: THREE.Mesh<THREE.SphereGeometry, THREE.ShaderMaterial>;
   currentPoints: THREE.Points<THREE.BufferGeometry, THREE.PointsMaterial>;
   curves: THREE.CatmullRomCurve3[];
+  currentTubes: THREE.Mesh<THREE.TubeGeometry, THREE.MeshBasicMaterial>[];
   targetQuaternion: THREE.Quaternion;
   targetDistance: number;
-  pointer: { active: boolean; x: number; y: number };
   frame: number;
   observer: ResizeObserver;
   destroy: () => void;
@@ -212,11 +219,14 @@ function createRuntime(canvas: HTMLCanvasElement): GlobeRuntime {
   earth.add(atmosphere);
 
   const curves = currentCurves();
+  const currentTubes: THREE.Mesh<THREE.TubeGeometry, THREE.MeshBasicMaterial>[] = [];
   for (const curve of curves) {
-    earth.add(new THREE.Mesh(
+    const tube = new THREE.Mesh(
       new THREE.TubeGeometry(curve, 140, 0.006, 6, true),
       new THREE.MeshBasicMaterial({ color: 0x5af3eb, transparent: true, opacity: 0.42, blending: THREE.AdditiveBlending }),
-    ));
+    );
+    currentTubes.push(tube);
+    earth.add(tube);
   }
   const currentGeometry = new THREE.BufferGeometry();
   currentGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(150 * 3), 3));
@@ -224,7 +234,6 @@ function createRuntime(canvas: HTMLCanvasElement): GlobeRuntime {
   earth.add(currentPoints);
 
   const targetQuaternion = new THREE.Quaternion();
-  const pointer = { active: false, x: 0, y: 0 };
   const observer = new ResizeObserver(() => {
     const rect = canvas.getBoundingClientRect();
     const width = Math.max(1, Math.round(rect.width));
@@ -236,8 +245,8 @@ function createRuntime(canvas: HTMLCanvasElement): GlobeRuntime {
   observer.observe(canvas);
 
   const runtime: GlobeRuntime = {
-    renderer, camera, earth, globe, evidence, ice, currentPoints, curves,
-    targetQuaternion, targetDistance: 4.8, pointer, frame: 0, observer,
+    renderer, camera, earth, globe, evidence, ice, currentPoints, curves, currentTubes,
+    targetQuaternion, targetDistance: 4.8, frame: 0, observer,
     destroy: () => {},
   };
   let raf = 0;
@@ -288,6 +297,7 @@ function applyScene(runtime: GlobeRuntime, scene: EarthSceneState) {
   runtime.evidence.material.uniforms.uStorybook.value = scene.style === 'storybook' ? 1 : 0;
   runtime.evidence.visible = scene.layer !== 'currents' || scene.style !== 'scientific';
   runtime.currentPoints.visible = scene.layer === 'currents' || scene.layer === 'coupled';
+  runtime.currentTubes.forEach((tube) => { tube.visible = scene.layer === 'currents' || scene.layer === 'coupled'; });
   const extent = illustrativeSeaIceForYear(scene.year).extent;
   const capDegrees = 7 + Math.sqrt(Math.max(0.2, extent) / 7.05) * 20;
   runtime.ice.material.uniforms.uThreshold.value = Math.sin(THREE.MathUtils.degToRad(90 - capDegrees));
@@ -296,10 +306,36 @@ function applyScene(runtime: GlobeRuntime, scene: EarthSceneState) {
   runtime.renderer.toneMappingExposure = scene.style === 'storybook' ? 1.3 : scene.style === 'scientific' ? 0.92 : 1.1;
 }
 
-export function EarthGlobe({ scene, onCapability }: GlobeProps) {
+const MIN_DISTANCE = 2.35;
+const MAX_DISTANCE = 7.4;
+
+function clampDistance(distance: number) {
+  return THREE.MathUtils.clamp(distance, MIN_DISTANCE, MAX_DISTANCE);
+}
+
+export const EarthGlobe = forwardRef<EarthGlobeHandle, GlobeProps>(function EarthGlobe(
+  { scene, onCapability, ariaLabel = 'Interactive three-dimensional Earth visualization' },
+  ref,
+) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const runtimeRef = useRef<GlobeRuntime | null>(null);
   const initialSceneRef = useRef(scene);
+  const latestSceneRef = useRef(scene);
+
+  useImperativeHandle(ref, () => ({
+    zoomIn: () => {
+      const runtime = runtimeRef.current;
+      if (runtime) runtime.targetDistance = clampDistance(runtime.targetDistance - 0.65);
+    },
+    zoomOut: () => {
+      const runtime = runtimeRef.current;
+      if (runtime) runtime.targetDistance = clampDistance(runtime.targetDistance + 0.65);
+    },
+    resetView: () => {
+      const runtime = runtimeRef.current;
+      if (runtime) applyScene(runtime, latestSceneRef.current);
+    },
+  }), []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -308,8 +344,87 @@ export function EarthGlobe({ scene, onCapability }: GlobeProps) {
       const runtime = createRuntime(canvas);
       runtimeRef.current = runtime;
       applyScene(runtime, initialSceneRef.current);
+
+      const points = new Map<number, { x: number; y: number }>();
+      const startQuaternion = new THREE.Quaternion();
+      let dragOrigin = { x: 0, y: 0 };
+      let pinchOrigin = 0;
+      let pinchDistance = runtime.targetDistance;
+
+      const beginSinglePointer = (point: { x: number; y: number }) => {
+        dragOrigin = point;
+        startQuaternion.copy(runtime.targetQuaternion);
+      };
+      const distanceBetweenPointers = () => {
+        const [first, second] = Array.from(points.values());
+        return first && second ? Math.hypot(second.x - first.x, second.y - first.y) : 0;
+      };
+      const onPointerDown = (event: PointerEvent) => {
+        try { canvas.setPointerCapture(event.pointerId); } catch { /* Synthetic and older pointer implementations may not support capture. */ }
+        points.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        if (points.size === 1) beginSinglePointer({ x: event.clientX, y: event.clientY });
+        if (points.size === 2) {
+          pinchOrigin = distanceBetweenPointers();
+          pinchDistance = runtime.targetDistance;
+        }
+        canvas.classList.add('is-grabbing');
+      };
+      const onPointerMove = (event: PointerEvent) => {
+        if (!points.has(event.pointerId)) return;
+        points.set(event.pointerId, { x: event.clientX, y: event.clientY });
+        if (points.size >= 2) {
+          const nextPinch = distanceBetweenPointers();
+          if (pinchOrigin > 0) runtime.targetDistance = clampDistance(pinchDistance * (pinchOrigin / nextPinch));
+          return;
+        }
+        const deltaX = event.clientX - dragOrigin.x;
+        const deltaY = event.clientY - dragOrigin.y;
+        const yaw = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), deltaX * 0.006);
+        const pitch = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), deltaY * 0.006);
+        runtime.targetQuaternion.copy(yaw.multiply(pitch).multiply(startQuaternion)).normalize();
+      };
+      const finishPointer = (event: PointerEvent) => {
+        points.delete(event.pointerId);
+        if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+        if (points.size === 1) beginSinglePointer(Array.from(points.values())[0]);
+        if (points.size === 0) canvas.classList.remove('is-grabbing');
+      };
+      const onWheel = (event: WheelEvent) => {
+        event.preventDefault();
+        runtime.targetDistance = clampDistance(runtime.targetDistance + event.deltaY * 0.004);
+      };
+      const onKeyDown = (event: KeyboardEvent) => {
+        const rotate = (axis: THREE.Vector3, radians: number) => {
+          runtime.targetQuaternion.premultiply(new THREE.Quaternion().setFromAxisAngle(axis, radians)).normalize();
+        };
+        if (event.key === 'ArrowLeft') rotate(new THREE.Vector3(0, 1, 0), -0.12);
+        else if (event.key === 'ArrowRight') rotate(new THREE.Vector3(0, 1, 0), 0.12);
+        else if (event.key === 'ArrowUp') rotate(new THREE.Vector3(1, 0, 0), -0.12);
+        else if (event.key === 'ArrowDown') rotate(new THREE.Vector3(1, 0, 0), 0.12);
+        else if (event.key === '+' || event.key === '=') runtime.targetDistance = clampDistance(runtime.targetDistance - 0.55);
+        else if (event.key === '-' || event.key === '_') runtime.targetDistance = clampDistance(runtime.targetDistance + 0.55);
+        else if (event.key === '0' || event.key === 'Home') applyScene(runtime, latestSceneRef.current);
+        else return;
+        event.preventDefault();
+      };
+
+      canvas.addEventListener('pointerdown', onPointerDown);
+      canvas.addEventListener('pointermove', onPointerMove);
+      canvas.addEventListener('pointerup', finishPointer);
+      canvas.addEventListener('pointercancel', finishPointer);
+      canvas.addEventListener('wheel', onWheel, { passive: false });
+      canvas.addEventListener('keydown', onKeyDown);
       onCapability?.(true);
-      return () => { runtime.destroy(); runtimeRef.current = null; };
+      return () => {
+        canvas.removeEventListener('pointerdown', onPointerDown);
+        canvas.removeEventListener('pointermove', onPointerMove);
+        canvas.removeEventListener('pointerup', finishPointer);
+        canvas.removeEventListener('pointercancel', finishPointer);
+        canvas.removeEventListener('wheel', onWheel);
+        canvas.removeEventListener('keydown', onKeyDown);
+        runtime.destroy();
+        runtimeRef.current = null;
+      };
     } catch (error) {
       console.error('[terra-globe]', error);
       onCapability?.(false);
@@ -317,8 +432,9 @@ export function EarthGlobe({ scene, onCapability }: GlobeProps) {
   }, [onCapability]);
 
   useEffect(() => {
+    latestSceneRef.current = scene;
     if (runtimeRef.current) applyScene(runtimeRef.current, scene);
   }, [scene]);
 
-  return <canvas ref={canvasRef} className="terra-globe" aria-label="Interactive three-dimensional Earth visualization" />;
-}
+  return <canvas ref={canvasRef} className="terra-globe" aria-label={ariaLabel} role="img" tabIndex={0} />;
+});
