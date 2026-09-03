@@ -55,6 +55,14 @@ npm run build
 
 The app uses Next.js 16, React 19, TypeScript, Vinext, and the imperative WebMCP API.
 
+## Privacy and responsible use
+
+The prototype has no account system, application database, advertising tracker, or application analytics. Workflow state is stored in the visitor's browser under `factory-floor-state-v1` and can be removed by resetting the demo or clearing the site's browser storage. A compatible browser agent may process state made available through WebMCP when the visitor asks it to act.
+
+- [Terms of Use](https://factory-maker-floor.chalky-wasp-3685.chatgpt.site/terms)
+- [Privacy Policy](https://factory-maker-floor.chalky-wasp-3685.chatgpt.site/privacy)
+- [AI & Safety Notice](https://factory-maker-floor.chalky-wasp-3685.chatgpt.site/ai-safety)
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
