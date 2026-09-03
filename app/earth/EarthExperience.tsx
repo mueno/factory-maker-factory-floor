@@ -33,6 +33,7 @@ type Recognition = {
 };
 type RecognitionConstructor = new () => Recognition;
 type Drawer = 'closed' | 'data' | 'conditions' | 'display';
+type MutationMode = 'interaction' | 'story' | 'start-story';
 
 const COPY = {
   en: {
@@ -242,17 +243,34 @@ export function EarthExperience() {
     speechSynthesis.speak(utterance);
   }, []);
 
-  const mutate = useCallback((expectedRevision: number, action: string, change: (current: EarthSceneState) => EarthSceneState) => {
+  const cancelPendingStory = useCallback(() => {
+    storyTimers.current.forEach(window.clearTimeout);
+    storyTimers.current = [];
+  }, []);
+
+  const mutate = useCallback((
+    expectedRevision: number,
+    action: string,
+    change: (current: EarthSceneState) => EarthSceneState,
+    mode: MutationMode = 'interaction',
+  ) => {
     const current = sceneRef.current;
     if (expectedRevision !== current.revision) return { ok: false, error: 'revision_conflict', current_revision: current.revision };
-    const next = { ...change(current), revision: current.revision + 1, lastAction: action };
+    if (mode !== 'story') cancelPendingStory();
+    const changed = change(current);
+    const next = {
+      ...changed,
+      story: mode === 'interaction' ? null : changed.story,
+      revision: current.revision + 1,
+      lastAction: action,
+    };
     sceneRef.current = next;
     setScene(next);
     setLogs((items) => [`${action} → r${next.revision}`, ...items].slice(0, 6));
     worldRef.current?.pulse(0.5, 0.46, 1.1, action.includes('layer') ? 'cyan' : 'gold');
     window.setTimeout(() => speak(next), 500);
     return { ok: true, scene: next, science: sceneScience(next) };
-  }, [speak]);
+  }, [cancelPendingStory, speak]);
 
   const host = useMemo(() => ({
     read: () => ({ scene: sceneRef.current, science: sceneScience(sceneRef.current), sources: SCIENCE_SOURCES, limitation: COPY.en.limitation }),
@@ -261,7 +279,7 @@ export function EarthExperience() {
     setScenario: (scenario: ScenarioId, year: number, revision: number) => mutate(revision, `earth_set_scenario(${scenario},${year})`, (current) => ({ ...current, scenario, year, story: null })),
     setStyle: (style: RenderStyle, revision: number) => mutate(revision, `earth_set_render_style(${style})`, (current) => ({ ...current, style })),
     playStory: (story: NonNullable<EarthSceneState['story']>, revision: number) => {
-      const result = mutate(revision, `earth_play_story(${story})`, (current) => ({ ...current, story }));
+      const result = mutate(revision, `earth_play_story(${story})`, (current) => ({ ...current, story }), 'start-story');
       if (result.ok) window.setTimeout(() => playStoryRef.current(), 0);
       return result;
     },
@@ -279,21 +297,16 @@ export function EarthExperience() {
   }, [host]);
 
   const startStory = useCallback(() => {
-    storyTimers.current.forEach(window.clearTimeout);
+    cancelPendingStory();
     const steps: Array<[number, Partial<EarthSceneState>, string]> = [
       [0, { region: 'arctic', layer: 'sea_ice', year: 2050, story: 'arctic_amoc_europe' }, 'story: Arctic sea ice'],
       [4500, { region: 'north_atlantic', layer: 'currents', year: 2085 }, 'story: North Atlantic circulation'],
       [9000, { region: 'europe', layer: 'temperature', year: 2100, story: null }, 'story: assessed European context'],
     ];
     storyTimers.current = steps.map(([delay, patch, action]) => window.setTimeout(() => {
-      const current = sceneRef.current;
-      const next = { ...current, ...patch, revision: current.revision + 1, lastAction: action };
-      sceneRef.current = next;
-      setScene(next);
-      setLogs((items) => [`${action} → r${next.revision}`, ...items].slice(0, 6));
-      speak(next);
+      mutate(sceneRef.current.revision, action, (current) => ({ ...current, ...patch }), 'story');
     }, delay));
-  }, [speak]);
+  }, [cancelPendingStory, mutate]);
 
   useEffect(() => { playStoryRef.current = startStory; }, [startStory]);
   useEffect(() => () => storyTimers.current.forEach(window.clearTimeout), []);
@@ -310,6 +323,7 @@ export function EarthExperience() {
   const executeCommand = useCallback((raw: string) => {
     const value = raw.trim().toLowerCase();
     if (!value) return;
+    cancelPendingStory();
     let patch: Partial<EarthSceneState> = {};
     if (/北極|arctic/.test(value)) patch = { ...patch, region: 'arctic', layer: 'sea_ice' };
     if (/大西洋|atlantic|amoc|海流/.test(value)) patch = { ...patch, region: 'north_atlantic', layer: 'currents' };
@@ -337,7 +351,7 @@ export function EarthExperience() {
     setNotice('');
     setCommand('');
     speak(next);
-  }, [locale, speak]);
+  }, [cancelPendingStory, locale, speak]);
 
   const toggleListening = useCallback(() => {
     if (listening) {
