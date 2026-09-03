@@ -17,6 +17,10 @@ export const metadata: Metadata = {
   title: 'Factory Maker: Factory Floor',
   description:
     'A shared WebMCP workbench that turns a fuzzy brief into a verified application.',
+  icons: {
+    icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
+    shortcut: '/favicon.svg',
+  },
   openGraph: {
     title: 'Factory Maker: Factory Floor',
     description:
