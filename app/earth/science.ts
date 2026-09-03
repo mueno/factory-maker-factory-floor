@@ -15,6 +15,12 @@ export type EarthSceneState = {
 };
 
 type Range = { best: number; low: number; high: number };
+type AmocEstimate = {
+  best: number;
+  low: null;
+  high: null;
+  basis: 'scenario-specific CMIP6 ensemble mean with linear reduced-order interpolation';
+};
 
 export const SCIENCE_SOURCES = [
   {
@@ -95,12 +101,15 @@ export const SEA_ICE_OBSERVATIONS = {
   threshold: 1,
 } as const;
 
-export const AMOC_2100 = {
-  declineBest: 39.5,
-  declineLow: 34,
-  declineHigh: 45,
-  unit: '%',
-} as const;
+// Multi-model CMIP6 mean AMOC decline by 2100: Weijer et al. (2020),
+// DOI 10.1029/2019GL086075. The paper reports 24% for SSP1-2.6,
+// 29% for SSP2-4.5, and 39% for SSP5-8.5. These are scenario-specific
+// ensemble means, not the endpoints of an assessed uncertainty interval.
+export const AMOC_2100_BY_SCENARIO: Record<ScenarioId, number> = {
+  ssp1_26: 24,
+  ssp2_45: 29,
+  ssp5_85: 39,
+};
 
 function interpolateRange(a: Range, b: Range, t: number): Range {
   const clamped = Math.max(0, Math.min(1, t));
@@ -131,12 +140,13 @@ export function seaLevelForYear(scenario: ScenarioId, year: number): Range {
   };
 }
 
-export function amocForYear(year: number): Range {
+export function amocForYear(scenario: ScenarioId, year: number): AmocEstimate {
   const progress = Math.max(0, Math.min(1, (year - 2025) / 75));
   return {
-    best: AMOC_2100.declineBest * progress,
-    low: AMOC_2100.declineLow * progress,
-    high: AMOC_2100.declineHigh * progress,
+    best: AMOC_2100_BY_SCENARIO[scenario] * progress,
+    low: null,
+    high: null,
+    basis: 'scenario-specific CMIP6 ensemble mean with linear reduced-order interpolation',
   };
 }
 
@@ -175,7 +185,7 @@ export function sceneScience(scene: EarthSceneState) {
   return {
     temperature: temperatureForYear(scene.scenario, scene.year),
     seaLevel: seaLevelForYear(scene.scenario, scene.year),
-    amocDecline: amocForYear(scene.year),
+    amocDecline: amocForYear(scene.scenario, scene.year),
     seaIce: SEA_ICE_OBSERVATIONS,
     seaIceDisplay: illustrativeSeaIceForYear(scene.year),
     seaIceThresholdCase: scene.year >= 2050,

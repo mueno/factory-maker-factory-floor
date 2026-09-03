@@ -5,6 +5,7 @@ import { LanguageSwitch, useLocale } from '../i18n';
 import { SiteFooter } from '../site-footer';
 import { EarthGlobe, type EarthGlobeHandle } from './EarthGlobe';
 import {
+  AMOC_2100_BY_SCENARIO,
   createInitialScene,
   REGIONS,
   SCENARIOS,
@@ -82,6 +83,7 @@ const COPY = {
     displayIntro: 'These choices change the explanation, not the underlying values.',
     assessedRange: 'IPCC assessed range',
     explanatory: 'Explanatory view',
+    amocReduced: 'Reduced display based on the scenario-specific CMIP6 ensemble mean',
     observed: 'Observed',
     illustrative: 'Illustrative',
   },
@@ -133,6 +135,7 @@ const COPY = {
     displayIntro: 'ここで変わるのは説明の仕方です。数値そのものは変わりません。',
     assessedRange: 'IPCCの評価幅',
     explanatory: '変化を理解するための表示',
+    amocReduced: 'シナリオ別CMIP6モデル平均をもとにした簡略表示',
     observed: '観測値',
     illustrative: '説明用表示',
   },
@@ -157,7 +160,7 @@ function narration(scene: EarthSceneState, locale: 'en' | 'ja') {
       return `${scene.year}年の北極海氷を、NSIDCの観測値とIPCCの「ほぼ氷のない北極海」の基準から描いています。特定の年を予測したものではありません。`;
     }
     if (scene.layer === 'currents') {
-      return `${scene.year}年にAMOCが約${fixed(science.amocDecline.best)}％弱まる場合を表しています。2100年までに34〜45％弱まるという研究上の幅を、変化が伝わるように簡略化しています。`;
+      return `${SCENARIOS[scene.scenario].label}のCMIP6モデル平均では、AMOCは2100年までに約${AMOC_2100_BY_SCENARIO[scene.scenario]}％弱まります。この画面の${scene.year}年値は、その平均値と2025年を直線で結んだ簡略表示で、不確実性の幅を示すものではありません。`;
     }
     if (scene.layer === 'sea_level') {
       return `${scene.year}年の世界平均海面は、基準期間より約${fixed(science.seaLevel.best, 2)}m高い表示です。IPCCの評価幅は${fixed(science.seaLevel.low, 2)}〜${fixed(science.seaLevel.high, 2)}mです。地域の浸水を予測したものではありません。`;
@@ -168,7 +171,7 @@ function narration(scene: EarthSceneState, locale: 'en' | 'ja') {
     return `${scene.year}年の地球を、気温、北極海氷、大西洋の循環、海面上昇のつながりとして見ています。気になる変化を選ぶか、言葉で尋ねてください。`;
   }
   if (scene.layer === 'sea_ice') return `The ${scene.year} Arctic sea-ice view connects NSIDC observations with the IPCC practically ice-free threshold. It is not a year-specific forecast.`;
-  if (scene.layer === 'currents') return `This view shows about ${fixed(science.amocDecline.best)} percent AMOC weakening in ${scene.year}, using the published 34–45 percent range for 2100 as its anchor.`;
+  if (scene.layer === 'currents') return `The CMIP6 ensemble mean for ${SCENARIOS[scene.scenario].label} shows about ${AMOC_2100_BY_SCENARIO[scene.scenario]} percent AMOC weakening by 2100. This ${scene.year} value linearly connects 2025 with that scenario-specific mean; it is a reduced display, not an uncertainty range.`;
   if (scene.layer === 'sea_level') return `Global mean sea level is shown at about ${fixed(science.seaLevel.best, 2)} metres in ${scene.year}, with an assessed range of ${fixed(science.seaLevel.low, 2)}–${fixed(science.seaLevel.high, 2)} metres. This is not local inundation.`;
   if (scene.layer === 'temperature') return `Under ${SCENARIOS[scene.scenario].label}, global surface temperature in ${scene.year} is assessed at about ${fixed(science.temperature.best)}°C above 1850–1900, with a range of ${fixed(science.temperature.low)}–${fixed(science.temperature.high)}°C.`;
   return `Explore how warming, Arctic sea ice, Atlantic circulation, and sea-level rise connect in ${scene.year}. Choose a topic or ask in your own words.`;
@@ -473,7 +476,7 @@ export function EarthExperience() {
           <div className="terra-highlight">
             {scene.layer === 'temperature' && <><strong>+{fixed(science.temperature.best)}°C</strong><span>{fixed(science.temperature.low)}–{fixed(science.temperature.high)}°C · {t.assessedRange}</span></>}
             {scene.layer === 'sea_ice' && <><strong>{fixed(science.seaIceDisplay.extent, 2)} million km²</strong><span className="terra-basis-badge">{seaIceBasisLabel}</span></>}
-            {scene.layer === 'currents' && <><strong>−{fixed(science.amocDecline.best)}%</strong><span>{fixed(science.amocDecline.low)}–{fixed(science.amocDecline.high)}% · {t.assessedRange}</span></>}
+            {scene.layer === 'currents' && <><strong>−{fixed(science.amocDecline.best)}%</strong><span>{t.amocReduced}</span></>}
             {scene.layer === 'sea_level' && <><strong>+{fixed(science.seaLevel.best, 2)}m</strong><span>{fixed(science.seaLevel.low, 2)}–{fixed(science.seaLevel.high, 2)}m · {t.assessedRange}</span></>}
             {scene.layer === 'coupled' && <><strong>+{fixed(science.temperature.best)}°C</strong><span>{source}</span></>}
           </div>

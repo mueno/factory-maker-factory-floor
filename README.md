@@ -33,7 +33,7 @@ TERRA is an exploratory, reduced-order visualization. It does not run a global c
 
 - Temperature and global mean sea-level ranges are taken from IPCC AR6 WGI.
 - September Arctic sea-ice observations use NSIDC Sea Ice Index v4 values for 1979 and 2025.
-- The AMOC endpoint uses the 34–45% CMIP6 decline range reported by Weijer et al. (2020) and archived by NOAA.
+- The AMOC view uses the scenario-specific CMIP6 multi-model mean declines reported by Weijer et al. (2020): 24% for SSP1-2.6, 29% for SSP2-4.5, and 39% for SSP5-8.5. Values before 2100 are explicitly presented as a reduced-order linear display, not an uncertainty range.
 - Values between assessment windows are visibly identified as interpolation.
 - The future sea-ice shape is an illustrative path to the IPCC “practically ice-free” threshold, not a year-specific forecast.
 
