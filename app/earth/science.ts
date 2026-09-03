@@ -43,6 +43,11 @@ export const SCIENCE_SOURCES = [
     label: 'NOAA repository — Weijer et al. (2020), CMIP6 AMOC projections',
     href: 'https://repository.library.noaa.gov/view/noaa/30634',
   },
+  {
+    id: 'oscar-currents',
+    label: 'OSCAR surface currents — July 2014 mean from six composites (NOAA CoastWatch mirror; NASA PO.DAAC archive)',
+    href: 'https://coastwatch.pfeg.noaa.gov/erddap/griddap/jplOscar.html',
+  },
 ] as const;
 
 export const REGIONS: Record<RegionId, { label: { en: string; ja: string }; lat: number; lon: number; distance: number }> = {

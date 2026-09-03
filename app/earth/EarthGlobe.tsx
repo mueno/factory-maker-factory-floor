@@ -2,6 +2,7 @@
 
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import * as THREE from 'three';
+import oscarStreamlines from './data/oscar-july-2014-streamlines.json';
 import type { EarthSceneState } from './science';
 import { illustrativeSeaIceForYear, REGIONS, sceneScience } from './science';
 
@@ -38,8 +39,10 @@ type GlobeRuntime = {
 };
 
 type CurrentPath = {
-  points: number[][];
+  name: string;
+  points: [number, number, number][];
   scenarioSensitive?: boolean;
+  meanSpeed: number;
 };
 
 type CurrentParticle = {
@@ -159,22 +162,12 @@ void main() {
 }`;
 
 function currentPaths(): CurrentPath[] {
-  // Qualitative paths used to explain circulation on the globe. These are not
-  // OSCAR velocity samples and the interface labels them as a conceptual view.
-  return [
-    { scenarioSensitive: true, points: [[10, -78], [23, -76], [34, -70], [42, -57], [49, -40], [56, -24], [62, -8]] },
-    { scenarioSensitive: true, points: [[62, -8], [64, 2], [61, 13], [57, 24], [52, 33]] },
-    { scenarioSensitive: true, points: [[58, -45], [51, -50], [43, -53], [34, -55], [25, -48]] },
-    { points: [[18, 121], [24, 126], [31, 132], [35, 140], [40, 147], [44, 158], [42, 174]] },
-    { points: [[42, 174], [43, -170], [45, -150], [46, -132], [45, -118]] },
-    { points: [[55, 165], [49, 157], [43, 150], [39, 145], [35, 141]] },
-    { points: [[-12, -38], [-22, -43], [-32, -48], [-42, -53], [-49, -48]] },
-    { points: [[-38, 18], [-30, 12], [-20, 5], [-10, -2], [2, -6]] },
-    { points: [[-33, 31], [-39, 42], [-43, 58], [-38, 72], [-31, 84]] },
-    { points: [[-54, -176], [-55, -126], [-53, -76], [-51, -24], [-52, 30], [-54, 82], [-55, 132], [-54, 176]] },
-    { points: [[9, -12], [8, -38], [7, -66], [8, -96], [7, -128], [6, -158]] },
-    { points: [[-8, 154], [-7, 122], [-7, 91], [-6, 58], [-6, 25], [-7, -8]] },
-  ];
+  return oscarStreamlines.paths.map((path) => ({
+    name: path.name,
+    points: path.points as [number, number, number][],
+    scenarioSensitive: /North Atlantic|Gulf Stream/.test(path.name),
+    meanSpeed: path.points.reduce((sum, point) => sum + point[2], 0) / path.points.length,
+  }));
 }
 
 function createRuntime(canvas: HTMLCanvasElement): GlobeRuntime {
@@ -342,7 +335,8 @@ function createRuntime(canvas: HTMLCanvasElement): GlobeRuntime {
   for (let i = 0; i < particleCount; i += 1) {
     const curveIndex = i % curves.length;
     const progress = ((i * 0.61803398875) + (curveIndex / curves.length)) % 1;
-    const speed = 0.022 + ((i * 37) % 31) / 1500;
+    const observedSpeed = paths[curveIndex].meanSpeed;
+    const speed = 0.018 + Math.min(0.055, observedSpeed * 0.055) + ((i * 37) % 13) / 2500;
     const trail = 0.006 + ((i * 19) % 17) / 2100;
     currentParticles.push({
       curveIndex,
@@ -351,7 +345,7 @@ function createRuntime(canvas: HTMLCanvasElement): GlobeRuntime {
       trail,
       scenarioSensitive: Boolean(paths[curveIndex].scenarioSensitive),
     });
-    const mix = ((i * 23) % 100) / 100;
+    const mix = Math.min(1, paths[curveIndex].meanSpeed / 0.7);
     const head = cyan.clone().lerp(gold, mix);
     const tail = head.clone().multiplyScalar(0.16);
     currentColors.set([tail.r, tail.g, tail.b, head.r, head.g, head.b], i * 6);

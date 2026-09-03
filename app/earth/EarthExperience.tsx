@@ -87,7 +87,7 @@ const COPY = {
     assessedRange: 'IPCC assessed range',
     explanatory: 'Explanatory view',
     amocReduced: 'Reduced display based on the scenario-specific CMIP6 ensemble mean',
-    currentVisualBasis: 'Flow paths are a conceptual guide, not measured OSCAR vectors',
+    currentVisualBasis: 'Currents: OSCAR (NASA PO.DAAC), July 2014 mean · open streamlines from six 5-day composites',
     lightingNote: 'The day/night boundary is presentation lighting, not the current solar position.',
     seaLevelReduced: 'Reduced-order display',
     observed: 'Observed',
@@ -146,7 +146,7 @@ const COPY = {
     assessedRange: 'IPCCの評価幅',
     explanatory: '変化を理解するための表示',
     amocReduced: 'シナリオ別CMIP6モデル平均をもとにした簡略表示',
-    currentVisualBasis: '流線の経路は位置関係を伝える概念表示で、OSCARの実測ベクトルではありません',
+    currentVisualBasis: '海流：OSCAR（NASA PO.DAAC）2014年7月平均 · 5日合成値6期間から生成した開いた流線',
     lightingNote: '昼夜の境界は画面演出用の固定照明で、現在の太陽位置を示すものではありません。',
     seaLevelReduced: '簡略表示',
     observed: '観測値',
@@ -190,7 +190,7 @@ function narration(scene: EarthSceneState, locale: 'en' | 'ja') {
       return `${scene.year}年の北極海氷を、NSIDCの観測値とIPCCの「ほぼ氷のない北極海」の基準から描いています。特定の年を予測したものではありません。`;
     }
     if (scene.layer === 'currents') {
-      return `${SCENARIOS[scene.scenario].label}のCMIP6モデル平均では、AMOCは2100年までに約${AMOC_2100_BY_SCENARIO[scene.scenario]}％弱まります。この画面の${scene.year}年値は、その平均値と2025年を直線で結んだ簡略表示です。光の流線は海流の位置関係を伝える概念表示で、実測ベクトルではありません。`;
+      return `${SCENARIOS[scene.scenario].label}のCMIP6モデル平均では、AMOCは2100年までに約${AMOC_2100_BY_SCENARIO[scene.scenario]}％弱まります。この画面の${scene.year}年値は、その平均値と2025年を直線で結んだ簡略表示です。光の流線は、衛星観測などから推定されたOSCARの2014年7月の海面流速を平均して生成しています。`;
     }
     if (scene.layer === 'sea_level') {
       return `${scene.year}年の世界平均海面は、基準期間より約${fixed(science.seaLevel.best, 2)}m高い表示です。IPCCの評価幅は${fixed(science.seaLevel.low, 2)}〜${fixed(science.seaLevel.high, 2)}mです。地域の浸水を予測したものではありません。`;
@@ -201,7 +201,7 @@ function narration(scene: EarthSceneState, locale: 'en' | 'ja') {
     return `${scene.year}年の地球を、気温、北極海氷、大西洋の循環、海面上昇のつながりとして見ています。気になる変化を選ぶか、言葉で尋ねてください。`;
   }
   if (scene.layer === 'sea_ice') return `The ${scene.year} Arctic sea-ice view connects NSIDC observations with the IPCC practically ice-free threshold. It is not a year-specific forecast.`;
-  if (scene.layer === 'currents') return `The CMIP6 ensemble mean for ${SCENARIOS[scene.scenario].label} shows about ${AMOC_2100_BY_SCENARIO[scene.scenario]} percent AMOC weakening by 2100. This ${scene.year} value linearly connects 2025 with that mean. The luminous paths are a conceptual circulation guide, not measured vectors.`;
+  if (scene.layer === 'currents') return `The CMIP6 ensemble mean for ${SCENARIOS[scene.scenario].label} shows about ${AMOC_2100_BY_SCENARIO[scene.scenario]} percent AMOC weakening by 2100. This ${scene.year} value linearly connects 2025 with that mean. The luminous streamlines are generated from the July 2014 mean of OSCAR surface-current estimates derived from satellite and related observations.`;
   if (scene.layer === 'sea_level') return `Global mean sea level is shown at about ${fixed(science.seaLevel.best, 2)} metres in ${scene.year}, with an assessed range of ${fixed(science.seaLevel.low, 2)}–${fixed(science.seaLevel.high, 2)} metres. This is not local inundation.`;
   if (scene.layer === 'temperature') return `Under ${SCENARIOS[scene.scenario].label}, global surface temperature in ${scene.year} is assessed at about ${fixed(science.temperature.best)}°C above 1850–1900, with a range of ${fixed(science.temperature.low)}–${fixed(science.temperature.high)}°C.`;
   return `Explore how warming, Arctic sea ice, Atlantic circulation, and sea-level rise connect in ${scene.year}. Choose a topic or ask in your own words.`;
@@ -229,7 +229,7 @@ function sceneHeading(scene: EarthSceneState, locale: 'en' | 'ja') {
 
 function currentSourceFor(layer: LayerId) {
   if (layer === 'sea_ice') return 'NSIDC Sea Ice Index v4';
-  if (layer === 'currents') return 'NOAA · Weijer et al. 2020';
+  if (layer === 'currents') return 'OSCAR 2014-07 · Weijer et al. 2020';
   return 'IPCC AR6 WGI';
 }
 
