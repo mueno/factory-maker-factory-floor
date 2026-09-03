@@ -50,7 +50,7 @@ export const REGIONS: Record<RegionId, { label: { en: string; ja: string }; lat:
   arctic: { label: { en: 'Arctic Ocean', ja: '北極海' }, lat: 78, lon: -35, distance: 4.25 },
   north_atlantic: { label: { en: 'North Atlantic', ja: '北大西洋' }, lat: 48, lon: -35, distance: 4.15 },
   europe: { label: { en: 'Northern Europe', ja: '北ヨーロッパ' }, lat: 55, lon: 10, distance: 4.05 },
-  japan: { label: { en: 'Japan', ja: '日本周辺' }, lat: 36, lon: 139, distance: 3.95 },
+  japan: { label: { en: 'Japan', ja: '日本周辺' }, lat: 36, lon: 139, distance: 2.8 },
 };
 
 export const SCENARIOS: Record<ScenarioId, {
