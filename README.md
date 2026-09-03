@@ -55,6 +55,10 @@ NASA imagery is used under NASA's media usage guidance. Courtesy NASA Earth Obse
 | `public/earth/blue-marble-2048.png` | [NASA Visible Earth — Blue Marble: Land Surface, Shallow Water, and Shaded Topography](https://visibleearth.nasa.gov/images/57730/the-blue-marble-land-surface-ocean-color-and-sea-ice) | Day-side surface texture |
 | `public/earth/black-marble-2016-3600.jpg` | [NASA Visible Earth — Earth at Night (Black Marble) 2016](https://visibleearth.nasa.gov/images/144898/earth-at-night-black-marble-2016-color-maps) | Night-side city lights |
 | `public/earth/clouds-2048.jpg` | [NASA Visible Earth — Blue Marble: Clouds](https://visibleearth.nasa.gov/images/57747/blue-marble-clouds) | Semi-transparent cloud layer |
+| `public/earth/blue-marble-land-roughness-2048.png` | Derived locally from the bundled NASA Blue Marble image by `scripts/generate-earth-render-masks.py` | Visual land/ocean roughness mask; not a measurement layer |
+| `public/earth/blue-marble-shaded-bump-2048.jpg` | Derived locally from the shaded topography in the bundled NASA Blue Marble image by `scripts/generate-earth-render-masks.py` | Subtle visual bump proxy; not a quantitative elevation model |
+
+NASA imagery is public domain under NASA's media usage guidelines; courtesy NASA Earth Observatory. The derived masks are rendering aids only and are never presented as observed scientific data.
 
 ## Run and verify
 

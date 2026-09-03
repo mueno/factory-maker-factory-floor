@@ -21,6 +21,7 @@ type GlobeRuntime = {
   camera: THREE.PerspectiveCamera;
   earth: THREE.Group;
   globe: THREE.Mesh<THREE.SphereGeometry, THREE.MeshStandardMaterial>;
+  nightShade: THREE.Mesh<THREE.SphereGeometry, THREE.ShaderMaterial>;
   nightLights: THREE.Mesh<THREE.SphereGeometry, THREE.ShaderMaterial>;
   clouds: THREE.Mesh<THREE.SphereGeometry, THREE.MeshPhongMaterial>;
   evidence: THREE.Mesh<THREE.SphereGeometry, THREE.ShaderMaterial>;
@@ -130,8 +131,16 @@ void main() {
   vec3 source = texture2D(uNightMap, vUv).rgb;
   float luminance = max(source.r, max(source.g, source.b));
   float nightSide = 1.0 - smoothstep(-0.14, 0.24, dot(normalize(vViewNormal), normalize(uLightDirection)));
-  float alpha = nightSide * smoothstep(0.025, 0.62, luminance) * uIntensity;
-  gl_FragColor = vec4(source * 1.55, alpha);
+  float alpha = nightSide * smoothstep(0.025, 0.24, luminance) * uIntensity;
+  gl_FragColor = vec4(source * 3.1, alpha);
+}`;
+
+const NIGHT_SHADE_FRAGMENT = `
+uniform vec3 uLightDirection;
+varying vec3 vViewNormal;
+void main() {
+  float nightSide = 1.0 - smoothstep(-0.18, 0.26, dot(normalize(vViewNormal), normalize(uLightDirection)));
+  gl_FragColor = vec4(0.004, 0.012, 0.028, nightSide * 0.90);
 }`;
 
 const ATMOSPHERE_VERTEX = `
@@ -203,14 +212,36 @@ function createRuntime(canvas: HTMLCanvasElement): GlobeRuntime {
   const dayTexture = loadColorTexture('/earth/blue-marble-2048.png', anisotropy);
   const nightTexture = loadColorTexture('/earth/black-marble-2016-3600.jpg', anisotropy);
   const cloudTexture = loadColorTexture('/earth/clouds-2048.jpg', anisotropy);
+  const roughnessTexture = new THREE.TextureLoader().load('/earth/blue-marble-land-roughness-2048.png');
+  const bumpTexture = new THREE.TextureLoader().load('/earth/blue-marble-shaded-bump-2048.jpg');
+  roughnessTexture.anisotropy = anisotropy;
+  bumpTexture.anisotropy = anisotropy;
   const globeMaterial = new THREE.MeshStandardMaterial({
     map: dayTexture,
+    roughnessMap: roughnessTexture,
+    bumpMap: bumpTexture,
+    bumpScale: 0.018,
     color: 0xffffff,
-    roughness: 0.67,
-    metalness: 0.015,
+    roughness: 0.76,
+    metalness: 0.025,
   });
   const globe = new THREE.Mesh(new THREE.SphereGeometry(1, 128, 96), globeMaterial);
   earth.add(globe);
+
+  // Fixed presentation lighting: intentionally reveals the terminator and is
+  // disclosed in the interface as unrelated to the current solar position.
+  const presentationLight = new THREE.Vector3(0.72, 0.18, 0.18).normalize();
+  const nightShade = new THREE.Mesh(
+    new THREE.SphereGeometry(1.0015, 128, 96),
+    new THREE.ShaderMaterial({
+      vertexShader: NIGHT_VERTEX,
+      fragmentShader: NIGHT_SHADE_FRAGMENT,
+      transparent: true,
+      depthWrite: false,
+      uniforms: { uLightDirection: { value: presentationLight } },
+    }),
+  );
+  earth.add(nightShade);
 
   const nightLights = new THREE.Mesh(
     new THREE.SphereGeometry(1.003, 128, 96),
@@ -222,15 +253,15 @@ function createRuntime(canvas: HTMLCanvasElement): GlobeRuntime {
       blending: THREE.AdditiveBlending,
       uniforms: {
         uNightMap: { value: nightTexture },
-        uLightDirection: { value: new THREE.Vector3(-0.48, 0.26, 1).normalize() },
-        uIntensity: { value: 1.25 },
+        uLightDirection: { value: presentationLight },
+        uIntensity: { value: 1.7 },
       },
     }),
   );
   earth.add(nightLights);
 
   const clouds = new THREE.Mesh(
-    new THREE.SphereGeometry(1.009, 128, 96),
+    new THREE.SphereGeometry(1.005, 128, 96),
     new THREE.MeshPhongMaterial({
       map: cloudTexture,
       alphaMap: cloudTexture,
@@ -350,7 +381,7 @@ function createRuntime(canvas: HTMLCanvasElement): GlobeRuntime {
   observer.observe(canvas);
 
   const runtime: GlobeRuntime = {
-    renderer, camera, earth, globe, nightLights, clouds, evidence, ice,
+    renderer, camera, earth, globe, nightShade, nightLights, clouds, evidence, ice,
     currentStreaks, currentParticles, curves, currentSpeedFactor: 1,
     targetQuaternion, targetDistance: 4.8, frame: 0, observer,
     destroy: () => {},
@@ -403,6 +434,8 @@ function createRuntime(canvas: HTMLCanvasElement): GlobeRuntime {
     dayTexture.dispose();
     nightTexture.dispose();
     cloudTexture.dispose();
+    roughnessTexture.dispose();
+    bumpTexture.dispose();
     renderer.dispose();
   };
   return runtime;
