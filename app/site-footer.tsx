@@ -1,6 +1,30 @@
+'use client';
+
 import Link from 'next/link';
+import { LanguageSwitch, useLocale } from './i18n';
 
 export function SiteFooter() {
+  const { locale } = useLocale();
+  const copy = locale === 'ja'
+    ? {
+        tag: 'AllNew合同会社によるハッカソン応募作品',
+        nav: '法務・プロジェクト情報',
+        terms: '利用規約',
+        privacy: 'プライバシー',
+        safety: 'AIと安全性',
+        source: 'ソースコード ↗',
+        note: '評価用ソフトウェアであり、専門的な助言ではありません。個人情報、機密情報、健康情報、決済情報を入力しないでください。',
+      }
+    : {
+        tag: 'Hackathon entry by AllNew LLC',
+        nav: 'Legal and project links',
+        terms: 'Terms',
+        privacy: 'Privacy',
+        safety: 'AI & Safety',
+        source: 'Source ↗',
+        note: 'Evaluation software, not professional advice. Do not enter personal, confidential, health, or payment information.',
+      };
+
   return (
     <footer className="site-footer">
       <div className="site-footer-main">
@@ -8,20 +32,20 @@ export function SiteFooter() {
           <span className="brand-mark">F</span>
           <span>
             <strong>FACTORY MAKER</strong>
-            <small>Hackathon prototype by AllNew LLC</small>
+            <small>{copy.tag}</small>
           </span>
         </Link>
-        <nav aria-label="Legal and project links">
-          <Link href="/terms">Terms</Link>
-          <Link href="/privacy">Privacy</Link>
-          <Link href="/ai-safety">AI &amp; Safety</Link>
-          <a href="https://github.com/mueno/factory-maker-factory-floor" target="_blank" rel="noreferrer">Source ↗</a>
-        </nav>
+        <div className="site-footer-right">
+          <LanguageSwitch compact />
+          <nav aria-label={copy.nav}>
+            <Link href="/terms">{copy.terms}</Link>
+            <Link href="/privacy">{copy.privacy}</Link>
+            <Link href="/ai-safety">{copy.safety}</Link>
+            <a href="https://github.com/mueno/factory-maker-factory-floor" target="_blank" rel="noreferrer">{copy.source}</a>
+          </nav>
+        </div>
       </div>
-      <p>
-        Evaluation software, not professional advice. Do not enter personal, confidential,
-        health, or payment information. © 2026 AllNew LLC.
-      </p>
+      <p>{copy.note} © 2026 AllNew LLC.</p>
     </footer>
   );
 }
