@@ -43,11 +43,12 @@ const initialState: FactoryState = {
 
 const COPY = {
   en: {
-    brandTag: 'Human × agent service builder', protocolLive: 'WebMCP live', protocolFallback: 'UI mode',
-    heroKicker: 'BROWSER-NATIVE COLLABORATION', heroTitle: 'Turn an idea into a service you can inspect.',
-    heroBody: 'The agent drafts and builds. You choose the direction, freeze the contract, and approve what moves forward. Every action and piece of evidence stays in one shared browser state.',
-    revision: 'REVISION', sharedState: 'One shared state', trailLabel: 'EVIDENCE TRAIL',
-    stages: ['Request', 'Direction', 'Build', 'Verified'], stageNotes: ['Clarify intent', 'Choose one path', 'Freeze and generate', 'Attach proof'],
+    brandTag: 'A playful workshop for people and AI', protocolLive: 'WebMCP buddy online', protocolFallback: 'UI mode',
+    heroKicker: 'BUILD TOGETHER IN THE BROWSER', heroTitle: 'Turn an idea into a service you can try and inspect.',
+    heroLead: 'Turn an idea into', heroAction: 'a service you can', heroDestination: 'try and inspect.',
+    heroBody: 'Describe what you want in everyday words. The AI shapes a brief and build options; you choose, lock, and approve each important step in the same shared workspace.',
+    revision: 'CRAFT', sharedState: 'Shared with AI', trailLabel: 'CRAFT MAP',
+    stages: ['Spark', 'Route', 'Build', 'Try it'], stageNotes: ['Shape the intent', 'Choose one path', 'Lock and assemble', 'Check the proof'],
     statusDone: 'Complete', statusActive: 'Now', statusWaiting: 'Waiting', human: 'HUMAN', agent: 'AGENT', both: 'HUMAN + AGENT', currentArtifact: 'CURRENT ARTIFACT',
     requestTitle: 'Describe the service in your own words', requestBody: 'Start with the outcome you want. The agent will turn it into a short brief for your review.',
     requestLabel: 'What should this service make possible?', requestPlaceholder: 'For example: I want a service that helps…', useExample: 'Use a fictional example',
@@ -64,9 +65,9 @@ const COPY = {
     generatedOutput: 'GENERATED OUTPUT', openApp: 'Open generated service',
     verifyEmpty: 'Run checks for the frozen contract, stale writes, WebMCP, human authority, and UI read-back.', runChecks: 'Run evidence checks',
     verifiedTitle: 'Evidence attached. Human authority preserved.', verifiedBody: 'Passing these checks demonstrates this bounded workflow; it is not a production-readiness certification.',
-    operation: 'LIVE OPERATION', toolsHere: 'Tools available now', operationBody: 'The page exposes only tools relevant to this stage. Writes require the current revision.',
+    operation: 'WORKSHOP BUDDY', toolsHere: 'Tools ready for this stage', operationBody: 'Your AI buddy receives only the tools needed for this stage. Any change must target the current revision.',
     read: 'READ', write: 'WRITE', toolsRegistered: 'tools registered on document.modelContext', unsupported: 'Open in a WebMCP-capable browser to expose these tools.',
-    authority: 'Human authority', authorityBody: 'The agent cannot choose a direction, freeze the contract, approve a pilot, or release an app.', latest: 'LATEST EVENT',
+    authority: 'You hold the key decisions', authorityBody: 'The AI cannot choose a direction, freeze the contract, approve a pilot, or release an app.', latest: 'LATEST MOVE',
     recentChanges: 'Recent changes and recovery', ledgerSummary: 'Every change has an owner and revision.', undo: 'Undo latest agent change', copy: 'Copy shared state', reset: 'Reset demo',
     resetConfirm: 'Reset the local demo state? This removes this workflow from your browser.', resetDone: 'The demo was reset on this device.', copied: 'Shared state copied to the clipboard.', agentStep: 'AGENT-AVAILABLE STEP',
     defaultAudience: 'Small teams evaluating AI-enabled service ideas', defaultOutcome: 'Choose one evidence-backed idea for a bounded pilot',
@@ -78,30 +79,31 @@ const COPY = {
     noScoreBody: 'Use the form or ask the browser agent to call', agentCan: 'AGENT CAN', agentCanBody: 'Read state · score a candidate · explain the result', humanKeepsBody: 'Approval · exceptions · release authority',
   },
   ja: {
-    brandTag: '人とAIでつくるサービス工房', protocolLive: 'WebMCP 接続中', protocolFallback: '通常UI',
-    heroKicker: 'ブラウザで進める共同制作', heroTitle: 'アイデアを、確かめられるサービスへ。',
-    heroBody: 'AIは下書きと構築を進めます。方向決定・仕様固定・公開は人が行います。誰が何を変え、どの根拠で進めたかを、同じ画面に残します。',
-    revision: '版', sharedState: '人とAIで共有', trailLabel: '証拠トレイル',
-    stages: ['依頼', '方向決定', '構築', '検証'], stageNotes: ['意図を整理', '一案を選ぶ', '仕様を固定して生成', '根拠を添付'],
+    brandTag: '人とAIのサービスものづくり工房', protocolLive: 'WebMCP 相棒AI接続中', protocolFallback: '通常UI',
+    heroKicker: 'ブラウザで一緒につくる', heroTitle: 'アイデアを、触って確かめるサービスへ。',
+    heroLead: 'アイデアを、', heroAction: '触って確かめる', heroDestination: 'サービスへ。',
+    heroBody: 'つくりたいことを普段の言葉で入力すると、AIが企画要旨と方向案を組み立てます。選ぶ・固定する・公開する判断は、同じ画面を見ながら人が行います。',
+    revision: 'クラフト', sharedState: '人とAIで共有', trailLabel: 'クラフトマップ',
+    stages: ['ひらめき', 'ルート選び', '組み立て', '動作確認'], stageNotes: ['意図を整える', '一案を選ぶ', '仕様を固定して生成', '根拠を確かめる'],
     statusDone: '完了', statusActive: '現在', statusWaiting: '待機中', human: '人', agent: 'AI', both: '人 + AI', currentArtifact: '現在の成果物',
-    requestTitle: 'つくりたいサービスを、普段の言葉で', requestBody: 'まず、実現したいことを書いてください。AIが短い企画要旨に整理し、確認できる形にします。',
+    requestTitle: 'まず、ひらめきを聞かせてください', requestBody: '実現したいことを、普段の言葉で書いてください。AIが短い企画要旨に整え、次のルートを考えられる形にします。',
     requestLabel: 'このサービスで、何をできるようにしたいですか？', requestPlaceholder: '例：○○に困っている人が、△△できるサービスをつくりたい', useExample: '架空の例を使う',
     dataNote: '入力内容はこのブラウザ内に保存されます。架空または機密性のない情報をお使いください。', organize: '依頼を整理する', restage: '企画要旨を更新する',
     structuredBrief: '整理した企画要旨', audience: '利用する人', outcome: '実現したい結果', humanCheckpoint: '人が確認する項目', acceptPrompt: '意図どおりに整理されているか確認してください。', acceptBrief: '内容を承認する',
-    directionTitle: 'つくる価値のある方向を選ぶ', directionBody: 'AIは範囲を絞った候補を用意できます。構築する一案を選ぶのは人です。',
+    directionTitle: 'どのルートで形にするか選ぶ', directionBody: 'AIが範囲を絞った3つの方向案を用意します。実際に組み立てる一案は、画面を見ながら人が選びます。',
     directionEmpty: '承認した企画要旨から、根拠を追える3つの方向案を作成できます。', makeConcepts: '3案を作成する', selectedByYou: '選択済み', selectDirection: 'この方向を選ぶ',
-    buildTitle: 'つくる前に、約束する範囲を固定する', buildBody: '実装範囲を画面上の仕様書で制限します。固定後に変える場合は、新しい版として記録します。',
+    buildTitle: '組み立てる範囲を、先に決める', buildBody: '実装範囲を画面上の仕様書で明確にします。固定後に変える場合は、新しい版として記録します。',
     contractEmpty: '選んだ方向から、範囲を限定した構築仕様を作成できます。', stageContract: '構築仕様を作成する', contractLabel: '構築仕様',
     product: 'サービス名', template: 'テンプレート', goal: '目的', primaryAction: '主な操作', agentMay: 'AIに任せること', humanKeeps: '人が決めること',
     freezeBoundary: '判断の境界', freezePrompt: '固定すると構築対象が確定し、生成へ進めます。', freeze: '仕様を固定する', contractFrozen: '仕様は固定されています',
     generatePrompt: 'この仕様だけを使い、許可済みテンプレートから動く画面を生成できます。', generate: '動くサービスを生成する',
-    verifyTitle: '生成した成果物を、その場で検証する', verifyBody: '成果物、元の仕様、検証結果を、版番号と出力ハッシュで結び付けます。',
+    verifyTitle: 'できたサービスを、触って確かめる', verifyBody: '成果物、元の仕様、検証結果を、版番号と出力ハッシュで結び付けて確認します。',
     generatedOutput: '生成した成果物', openApp: '生成したサービスを開く',
     verifyEmpty: '固定した仕様、古い書き込みの拒否、WebMCP、人の権限、画面への反映を検証します。', runChecks: '検証を実行する',
     verifiedTitle: '根拠を添付し、人の決定権を確認しました。', verifiedBody: 'ここでの合格は、この限定された流れの確認結果です。本番運用できることを保証するものではありません。',
-    operation: '現在のAI操作', toolsHere: 'いま使えるツール', operationBody: 'この工程に必要なツールだけを公開します。書き込みには現在の版番号が必要です。',
+    operation: '工房の相棒AI', toolsHere: 'この工程で使える道具', operationBody: '相棒AIには、この工程に必要な道具だけを渡します。変更には現在の版番号が必要です。',
     read: '読取', write: '変更', toolsRegistered: '個のツールを document.modelContext に登録済み', unsupported: 'WebMCP対応ブラウザで開くと、これらのツールをAIが利用できます。',
-    authority: '人が持つ決定権', authorityBody: 'AIは方向の選択、仕様の固定、試行の承認、公開を行えません。', latest: '直近の変更',
+    authority: '大切な判断は、あなたが行います', authorityBody: 'AIは方向の選択、仕様の固定、試行の承認、公開を行えません。', latest: '直近の動き',
     recentChanges: '変更履歴とやり直し', ledgerSummary: 'すべての変更に、担当者と版番号が付きます。', undo: 'AIの直前操作を取り消す', copy: '共有状態をコピー', reset: 'デモを初期化',
     resetConfirm: 'このブラウザに保存したデモの作業内容を削除し、最初からやり直しますか？', resetDone: 'この端末のデモを初期化しました。', copied: '共有状態をクリップボードにコピーしました。', agentStep: 'AIが実行できる工程',
     defaultAudience: 'AIを活用したサービス案を検討する小規模チーム', defaultOutcome: '根拠のある一案を選び、範囲を絞った試行へ進める',
@@ -348,6 +350,7 @@ export default function Home() {
   if (view === 'preview' && state.generated) return <GeneratedPreview state={state} mcpSupported={mcpSupported} registeredTools={registeredTools} scoreCandidate={scoreCandidate} approvePilot={approvePilot} onBack={() => setView('factory')} />;
 
   const stageOwners = [t.both, t.human, t.both, t.both];
+  const stageIcons = ['✦', '➜', '◆', '✓'];
   const currentTitles = [t.requestTitle, t.directionTitle, t.buildTitle, t.verifyTitle];
   const currentBodies = [t.requestBody, t.directionBody, t.buildBody, t.verifyBody];
   const visibleNotice = registrationError ?? (
@@ -358,14 +361,14 @@ export default function Home() {
       : translatedNotice(notice, locale)
   );
   return (
-    <main className="app-shell">
+    <main className={`app-shell lang-${locale}`}>
       <header className="product-header">
         <div className="product-brand" aria-label="Factory Maker"><span className="brand-symbol">FM</span><span><b>FACTORY MAKER</b><small>{t.brandTag}</small></span></div>
         <div className="header-controls"><LanguageSwitch /><span className={`protocol-pill ${mcpSupported ? '' : 'offline'}`}><i aria-hidden="true" /> {mcpSupported ? t.protocolLive : t.protocolFallback}</span></div>
       </header>
       <div className="product-page">
         <section className="product-hero">
-          <div><p className="hero-kicker">{t.heroKicker}</p><h1>{t.heroTitle}</h1><p>{t.heroBody}</p></div>
+          <div className="hero-copy"><p className="hero-kicker"><span aria-hidden="true">✦</span>{t.heroKicker}</p><h1 aria-label={t.heroTitle}><span className="hero-lead">{t.heroLead}{locale === 'en' ? ' ' : null}</span><span className="hero-build-line"><span className="hero-action">{t.heroAction}</span>{locale === 'en' ? ' ' : null}<wbr /><span className="hero-destination">{t.heroDestination}</span></span></h1><p>{t.heroBody}</p></div>
           <div className="revision-badge" aria-label={`${t.revision} ${state.revision}`}><span>{t.revision}</span><strong>r{state.revision}</strong><small>{t.sharedState}</small></div>
         </section>
         <section className="trail-section" aria-labelledby="trail-title">
@@ -373,7 +376,7 @@ export default function Home() {
           <ol className="evidence-trail">
             {t.stages.map((label, index) => {
               const status = stageComplete[index] ? 'done' : index === activeStage ? 'active' : 'waiting';
-              return <li className={status} key={label} aria-current={status === 'active' ? 'step' : undefined}><span className="trail-node">{stageComplete[index] ? '✓' : index + 1}</span><div className="trail-copy"><span>{label}</span><strong>{t.stageNotes[index]}</strong><small>{stageOwners[index]} · {status === 'done' ? t.statusDone : status === 'active' ? t.statusActive : t.statusWaiting}</small></div></li>;
+              return <li className={status} key={label} aria-current={status === 'active' ? 'step' : undefined}><span className="trail-node"><b aria-hidden="true">{stageComplete[index] ? '✓' : stageIcons[index]}</b><small>0{index + 1}</small></span><div className="trail-copy"><span>{label}</span><strong>{t.stageNotes[index]}</strong><small>{stageOwners[index]} · {status === 'done' ? t.statusDone : status === 'active' ? t.statusActive : t.statusWaiting}</small></div>{status === 'active' && <em className="now-flag">NOW</em>}</li>;
             })}
           </ol>
         </section>
@@ -404,8 +407,8 @@ export default function Home() {
               {state.phase === 'verified' && <div className="verified-banner"><span>✓</span><div><strong>{t.verifiedTitle}</strong><p>{t.verifiedBody}</p></div></div>}
             </div>}
           </section>
-          <aside className="operation-panel" aria-label={t.operation}>
-            <header><div className="agent-avatar">AI</div><div><span>{t.operation}</span><strong>{t.toolsHere}</strong></div><i className={`online-dot ${mcpSupported ? '' : 'offline'}`} aria-hidden="true" /></header>
+          <aside className="operation-panel companion-panel" aria-label={t.operation}>
+            <header><div className="agent-avatar" aria-hidden="true"><span>AI</span></div><div><span>{t.operation}</span><strong>{t.toolsHere}</strong></div><i className={`online-dot ${mcpSupported ? '' : 'offline'}`} aria-hidden="true" /></header>
             <p>{t.operationBody}</p><div className="operation-tools">{activeToolNames.map((name) => <div key={name}><span className={name.startsWith('read_') ? 'read' : 'write'}>{name.startsWith('read_') ? t.read : t.write}</span><code>{name}</code></div>)}</div>
             <small className="registration-readback">{mcpSupported ? `${registeredTools.length}/${activeToolNames.length} ${t.toolsRegistered}` : t.unsupported}</small>
             <div className="authority-card"><span aria-hidden="true">◇</span><div><strong>{t.authority}</strong><p>{t.authorityBody}</p></div></div>
