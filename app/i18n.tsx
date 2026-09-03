@@ -22,14 +22,20 @@ function initialBrowserLocale(): Locale {
   return window.navigator.language.toLowerCase().startsWith('ja') ? 'ja' : 'en';
 }
 
-export function LocaleProvider({ children }: { children: React.ReactNode }) {
-  const [locale, updateLocale] = useState<Locale>('en');
+export function LocaleProvider({ children, initial }: { children: React.ReactNode; initial?: Locale }) {
+  const [locale, updateLocale] = useState<Locale>(initial ?? 'en');
 
   useEffect(() => {
+    // With an explicit initial locale (from ?lang=), SSR and hydration already
+    // agree; only sync the html lang attribute. Otherwise detect client-side.
+    if (initial) {
+      document.documentElement.lang = initial;
+      return;
+    }
     const next = initialBrowserLocale();
     document.documentElement.lang = next;
     queueMicrotask(() => updateLocale(next));
-  }, []);
+  }, [initial]);
 
   const value = useMemo<LocaleContextValue>(() => ({
     locale,
