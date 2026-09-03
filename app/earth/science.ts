@@ -53,6 +53,9 @@ export const SCENARIOS: Record<ScenarioId, {
   temperature: { near: Range; mid: Range; long: Range };
   seaLevel2100: Range;
 }> = {
+  // Temperature central estimates and very likely ranges: IPCC AR6 WGI
+  // Table SPM.1. Global mean sea-level medians and likely ranges for 2100,
+  // relative to 1995–2014: IPCC AR6 WGI Table 9.9.
   ssp1_26: {
     label: 'SSP1-2.6',
     name: { en: 'Low emissions', ja: '低排出' },
@@ -61,7 +64,7 @@ export const SCENARIOS: Record<ScenarioId, {
       mid: { best: 1.7, low: 1.3, high: 2.2 },
       long: { best: 1.8, low: 1.3, high: 2.4 },
     },
-    seaLevel2100: { best: 0.47, low: 0.32, high: 0.62 },
+    seaLevel2100: { best: 0.44, low: 0.32, high: 0.62 },
   },
   ssp2_45: {
     label: 'SSP2-4.5',
@@ -71,7 +74,7 @@ export const SCENARIOS: Record<ScenarioId, {
       mid: { best: 2.0, low: 1.6, high: 2.5 },
       long: { best: 2.7, low: 2.1, high: 3.5 },
     },
-    seaLevel2100: { best: 0.60, low: 0.44, high: 0.76 },
+    seaLevel2100: { best: 0.56, low: 0.44, high: 0.76 },
   },
   ssp5_85: {
     label: 'SSP5-8.5',
@@ -81,7 +84,7 @@ export const SCENARIOS: Record<ScenarioId, {
       mid: { best: 2.4, low: 1.9, high: 3.0 },
       long: { best: 4.4, low: 3.3, high: 5.7 },
     },
-    seaLevel2100: { best: 0.82, low: 0.63, high: 1.01 },
+    seaLevel2100: { best: 0.77, low: 0.63, high: 1.01 },
   },
 };
 
