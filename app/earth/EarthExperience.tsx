@@ -3,8 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { LanguageSwitch, useLocale } from '../i18n';
 import { SiteFooter } from '../site-footer';
-import { WorldLayer } from '../adlib/world-layer';
-import type { WorldHandle } from '../adlib/world';
 import { EarthGlobe, type EarthGlobeHandle } from './EarthGlobe';
 import {
   createInitialScene,
@@ -220,7 +218,6 @@ export function EarthExperience() {
   const globeRef = useRef<EarthGlobeHandle | null>(null);
   const recognitionRef = useRef<Recognition | null>(null);
   const audioRef = useRef<{ context: AudioContext; gain: GainNode; pan: StereoPannerNode; oscillator: OscillatorNode } | null>(null);
-  const worldRef = useRef<WorldHandle | null>(null);
   const storyTimers = useRef<number[]>([]);
   const playStoryRef = useRef<(story: NonNullable<EarthSceneState['story']>) => void>(() => undefined);
   const localeRef = useRef(locale);
@@ -267,7 +264,6 @@ export function EarthExperience() {
     sceneRef.current = next;
     setScene(next);
     setLogs((items) => [`${action} → r${next.revision}`, ...items].slice(0, 6));
-    worldRef.current?.pulse(0.5, 0.46, 1.1, action.includes('layer') ? 'cyan' : 'gold');
     window.setTimeout(() => speak(next), 500);
     return { ok: true, scene: next, science: sceneScience(next) };
   }, [cancelPendingStory, speak]);
@@ -438,12 +434,9 @@ export function EarthExperience() {
   const source = currentSourceFor(scene.layer);
   const seaIceBasisLabel = scene.year <= 2025 ? t.observed : t.illustrative;
   const modelContextReady = registered.length === EARTH_TOOL_NAMES.length;
-  const onWorldCapability = useCallback(() => undefined, []);
-  const onWorldHandle = useCallback((handle: WorldHandle | null) => { worldRef.current = handle; }, []);
 
   return (
     <main className={`terra-shell terra-${scene.style}`}>
-      <WorldLayer active onCapability={onWorldCapability} onHandle={onWorldHandle} />
       <section className="terra-stage" aria-label={t.tag}>
         <EarthGlobe ref={globeRef} scene={scene} onCapability={setGlobeReady} ariaLabel={t.interaction} />
 

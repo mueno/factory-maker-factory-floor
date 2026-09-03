@@ -10,7 +10,7 @@ Built for the [WebMCP Challenge](https://webmcp.devpost.com/).
 - Camera flights connect the Arctic, North Atlantic, Europe, Japan, and the whole Earth.
 - Scientific, cinematic, and plain-language views change presentation without changing values.
 - Browser speech recognition, speech synthesis, and Web Audio provide voice input, spoken explanations, and a spatial ambient layer when the browser supports them.
-- The existing MAESTRO on-device WebGPU fluid field runs behind the globe on supported devices. The experience falls back cleanly when WebGPU is unavailable.
+- The TERRA route mounts only the Three.js Earth scene; the older MAESTRO WebGPU fluid experiment remains in the repository but does not run behind this page.
 
 ## Why WebMCP
 
@@ -65,7 +65,7 @@ The interface remains usable without WebMCP. Microphone access is requested only
 
 ## Technology
 
-Next.js 16, React 19, TypeScript, Three.js, Natural Earth geometry through `world-atlas`, the imperative WebMCP API, the Web Speech API, Web Audio, and MAESTRO's on-device WebGPU world layer.
+Next.js 16, React 19, TypeScript, Three.js, Natural Earth geometry through `world-atlas`, the imperative WebMCP API, the Web Speech API, and Web Audio.
 
 ## Legal and responsible use
 
