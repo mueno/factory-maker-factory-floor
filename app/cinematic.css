@@ -878,7 +878,176 @@ html:has(main.service-preview), html:has(main.service-preview) body {
   .service-preview *, .service-preview *::before, .service-preview *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
 }
 
-/* Stage Runtime v2 ------------------------------------------------------- */
+/* Adlib shell ------------------------------------------------------------ */
+.adlib-shell .product-page { max-width: 1080px; }
+.adlib-shell.has-app .product-page { padding-top: 28px; }
+.adlib-hero { margin-bottom: 8px; }
+.adlib-shell .product-hero .hero-copy { max-width: 860px; }
+
+.adlib-prompt {
+  background: rgba(255, 250, 240, .97);
+  border: 1px solid rgba(255,255,255,.8);
+  border-radius: 24px;
+  box-shadow: 0 30px 90px rgba(0,0,0,.26);
+  color: var(--stage-ink);
+  margin-top: 22px;
+  padding: 22px 24px;
+}
+.adlib-prompt label { color: #56729d; display: block; font-size: 11px; font-weight: 820; letter-spacing: .12em; margin-bottom: 10px; text-transform: uppercase; }
+.adlib-prompt-row { display: flex; gap: 12px; }
+.adlib-prompt-row input {
+  background: white;
+  border: 1px solid #d4dde9;
+  border-radius: 999px;
+  color: var(--stage-ink);
+  flex: 1;
+  font-size: 16px;
+  min-height: 54px;
+  outline: 0;
+  padding: 12px 22px;
+}
+.adlib-prompt-row input:focus { border-color: var(--stage-coral); box-shadow: 0 0 0 4px rgba(255,111,97,.18); }
+.adlib-prompt-row .primary-button { flex: none; }
+.adlib-chips { align-items: center; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.adlib-chips > span { color: #7a879c; font-size: 12px; font-weight: 700; }
+.adlib-chips button {
+  background: #f2f6fb;
+  border: 1px solid #dbe3ef;
+  border-radius: 999px;
+  color: #35507c;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  min-height: 36px;
+  padding: 6px 14px;
+}
+.adlib-chips button:hover { border-color: var(--stage-cyan); }
+.adlib-data-note { color: #8b97ab; display: block; font-size: 11px; margin-top: 12px; }
+
+.adlib-status-row { align-items: center; display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 2px 0; }
+.adlib-brain-chip {
+  align-items: center;
+  background: rgba(255,255,255,.1);
+  border: 1px solid rgba(255,255,255,.22);
+  border-radius: 999px;
+  color: white;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 750;
+  gap: 8px;
+  min-height: 36px;
+  padding: 6px 14px;
+}
+.adlib-brain-chip i { background: var(--stage-cyan); border-radius: 50%; box-shadow: 0 0 10px var(--stage-cyan); height: 8px; width: 8px; }
+.adlib-brain-chip.brain-proxy i { background: var(--stage-gold); box-shadow: 0 0 10px var(--stage-gold); }
+.adlib-brain-chip.brain-script i { background: #a8b4c6; box-shadow: none; }
+.adlib-turns { color: rgba(255,255,255,.64); font-size: 12px; font-variant-numeric: tabular-nums; }
+.adlib-quiet {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,.24);
+  border-radius: 999px;
+  color: rgba(255,255,255,.82);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  min-height: 36px;
+  padding: 6px 14px;
+}
+.adlib-quiet:hover:not(:disabled) { background: rgba(255,255,255,.1); }
+.adlib-quiet:disabled { cursor: not-allowed; opacity: .4; }
+.adlib-quiet.danger { border-color: rgba(255,140,120,.5); color: #ffb3a6; }
+.adlib-notice { background: rgba(255,140,120,.14); border: 1px solid rgba(255,140,120,.4); border-radius: 12px; color: #ffd0c7; font-size: 13px; margin: 12px 0 0; padding: 10px 14px; }
+.adlib-warnings { color: rgba(255,213,121,.9); font-size: 12px; margin: 10px 2px 0; }
+
+.adlib-stage { margin-top: 16px; position: relative; }
+.adlib-stage iframe {
+  background: #fffdfa;
+  border: 1px solid rgba(255,255,255,.82);
+  border-radius: 30px;
+  box-shadow: 0 40px 120px rgba(0,0,0,.32), 0 0 0 8px rgba(255,255,255,.07);
+  display: block;
+  height: 420px;
+  transition: height .25s ease;
+  width: 100%;
+}
+.adlib-stage.busy iframe { filter: saturate(.85) brightness(.97); }
+.adlib-stage-empty {
+  align-items: center;
+  color: #8b97ab;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  inset: 0;
+  justify-content: center;
+  pointer-events: none;
+  position: absolute;
+}
+.adlib-stage-empty span { color: var(--stage-gold); font-size: 26px; }
+.adlib-stage-empty p { font-size: 14px; font-weight: 650; margin: 0; }
+.adlib-stage-busy {
+  align-items: center;
+  background: rgba(7, 19, 38, .42);
+  backdrop-filter: blur(2px);
+  border-radius: 30px;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  inset: 0;
+  justify-content: center;
+  position: absolute;
+}
+.adlib-stage-busy p { font-size: 13px; font-weight: 700; margin: 0; text-shadow: 0 2px 10px rgba(0,0,0,.5); }
+.adlib-stage-busy i {
+  animation: adlib-bounce 1s ease-in-out infinite;
+  background: var(--stage-cyan);
+  border-radius: 50%;
+  box-shadow: 0 0 16px var(--stage-cyan);
+  display: inline-block;
+  height: 10px;
+  width: 10px;
+}
+.adlib-stage-busy i:nth-of-type(2) { animation-delay: .15s; background: var(--stage-gold); box-shadow: 0 0 16px var(--stage-gold); }
+.adlib-stage-busy i:nth-of-type(3) { animation-delay: .3s; background: var(--stage-coral); box-shadow: 0 0 16px var(--stage-coral); }
+@keyframes adlib-bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-9px); } }
+
+.adlib-mode-note { color: rgba(255,255,255,.55); font-size: 12px; line-height: 1.7; margin: 14px 2px 0; }
+
+.adlib-backstage {
+  background: rgba(8,20,43,.78);
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 18px;
+  color: white;
+  display: grid;
+  gap: 1px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 18px;
+  overflow: hidden;
+}
+.adlib-backstage section { background: rgba(255,255,255,.045); min-width: 0; padding: 16px; }
+.adlib-backstage section > span { color: #9eb5d5; display: block; font-size: 9px; font-weight: 850; letter-spacing: .14em; margin-bottom: 8px; text-transform: uppercase; }
+.adlib-backstage small { color: #8da2bf; font-size: 10px; }
+.adlib-tool-list { display: grid; gap: 4px; margin-bottom: 8px; }
+.adlib-backstage code { color: #c6d2e5; font-size: 10px; overflow-wrap: anywhere; }
+.adlib-backstage ol { list-style: none; margin: 0; padding: 0; }
+.adlib-backstage li { border-top: 1px solid rgba(255,255,255,.1); color: #c6d2e5; display: flex; font-size: 10px; gap: 6px; padding: 6px 0; }
+.adlib-backstage li b { color: var(--stage-cyan); }
+.adlib-backstage li small { color: #8da2bf; margin-left: auto; }
+.adlib-backstage pre { color: #c6d2e5; font-size: 10px; line-height: 1.6; margin: 0; max-height: 160px; overflow: auto; white-space: pre-wrap; word-break: break-all; }
+
+@media (max-width: 760px) {
+  .adlib-prompt { padding: 16px; }
+  .adlib-prompt-row { flex-direction: column; }
+  .adlib-prompt-row .primary-button { width: 100%; }
+  .adlib-stage iframe { border-radius: 20px; }
+  .adlib-backstage { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .adlib-stage-busy i { animation: none !important; }
+}
+
+/* Stage Runtime v2 (legacy, superseded by Adlib) --------------------------- */
 .service-preview.theme-noir {
   --service-accent: #35507c;
   --service-accent-deep: #1e3050;

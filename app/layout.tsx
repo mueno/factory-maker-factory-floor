@@ -15,31 +15,31 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Factory Maker: Live Service Studio',
+  title: 'Adlib — Improvised UI Runtime',
   description:
-    'A human-led WebMCP studio where a browser agent composes a working, verifiable multi-screen service from one thought.',
+    'Say what you need and an app appears. Every next screen is improvised at runtime by a brain — your WebMCP browser agent or an API. No app code is written in advance.',
   icons: {
     icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
     shortcut: '/favicon.svg',
   },
   openGraph: {
-    title: 'Factory Maker: Live Service Studio',
+    title: 'Adlib — Improvised UI Runtime',
     description:
-      'Turn a rough idea into a working WebMCP service while every human and agent decision stays visible.',
+      'Apps are born at runtime: a WebMCP-native stage where the UI is improvised on every interaction.',
     type: 'website',
     images: [
       {
         url: '/factory-floor-social-preview.png',
         width: 1536,
         height: 1024,
-        alt: 'A cinematic studio where a person and a browser agent compose a working WebMCP service together.',
+        alt: 'Adlib: a live stage where a brain improvises the user interface at runtime.',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Factory Maker: Live Service Studio',
-    description: 'A human-led WebMCP studio for turning rough intent into a verified, working service.',
+    title: 'Adlib — Improvised UI Runtime',
+    description: 'A WebMCP-native stage where every next screen is improvised at runtime.',
     images: ['/factory-floor-social-preview.png'],
   },
 };

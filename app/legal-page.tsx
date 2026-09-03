@@ -21,15 +21,15 @@ export function LegalPage({
     <main className="legal-shell">
       <header className="legal-topbar">
         <Link className="brand" href="/">
-          <span className="brand-mark">F</span>
+          <span className="brand-mark">A</span>
           <span>
-            <b>FACTORY MAKER</b>
-            <small>Browser-native build system</small>
+            <b>ADLIB</b>
+            <small>Improvised UI runtime</small>
           </span>
         </Link>
         <div className="legal-topbar-actions">
           <LanguageSwitch compact />
-          <Link className="legal-back" href="/">← {locale === 'ja' ? 'Factory Makerに戻る' : 'Back to Factory Maker'}</Link>
+          <Link className="legal-back" href="/">← {locale === 'ja' ? 'Adlibに戻る' : 'Back to Adlib'}</Link>
         </div>
       </header>
       <article className="legal-document">
