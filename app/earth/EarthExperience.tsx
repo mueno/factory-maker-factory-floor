@@ -222,7 +222,7 @@ export function EarthExperience() {
   const audioRef = useRef<{ context: AudioContext; gain: GainNode; pan: StereoPannerNode; oscillator: OscillatorNode } | null>(null);
   const worldRef = useRef<WorldHandle | null>(null);
   const storyTimers = useRef<number[]>([]);
-  const playStoryRef = useRef<() => void>(() => undefined);
+  const playStoryRef = useRef<(story: NonNullable<EarthSceneState['story']>) => void>(() => undefined);
   const localeRef = useRef(locale);
   const narrationRef = useRef(narrationOn);
 
@@ -280,7 +280,7 @@ export function EarthExperience() {
     setStyle: (style: RenderStyle, revision: number) => mutate(revision, `earth_set_render_style(${style})`, (current) => ({ ...current, style })),
     playStory: (story: NonNullable<EarthSceneState['story']>, revision: number) => {
       const result = mutate(revision, `earth_play_story(${story})`, (current) => ({ ...current, story }), 'start-story');
-      if (result.ok) window.setTimeout(() => playStoryRef.current(), 0);
+      if (result.ok) window.setTimeout(() => playStoryRef.current(story), 0);
       return result;
     },
   }), [mutate]);
@@ -296,13 +296,18 @@ export function EarthExperience() {
     return () => controller.abort();
   }, [host]);
 
-  const startStory = useCallback(() => {
+  const startStory = useCallback((story: NonNullable<EarthSceneState['story']>) => {
     cancelPendingStory();
-    const steps: Array<[number, Partial<EarthSceneState>, string]> = [
-      [0, { region: 'arctic', layer: 'sea_ice', year: 2050, story: 'arctic_amoc_europe' }, 'story: Arctic sea ice'],
-      [4500, { region: 'north_atlantic', layer: 'currents', year: 2085 }, 'story: North Atlantic circulation'],
-      [9000, { region: 'europe', layer: 'temperature', year: 2100, story: null }, 'story: assessed European context'],
-    ];
+    const steps: Array<[number, Partial<EarthSceneState>, string]> = story === 'sea_level'
+      ? [
+          [0, { region: 'global', layer: 'sea_level', year: 2050, story: 'sea_level' }, 'story: assessed global mean sea level'],
+          [5000, { region: 'japan', layer: 'sea_level', year: 2100, story: null }, 'story: global mean sea level near Japan (not local inundation)'],
+        ]
+      : [
+          [0, { region: 'arctic', layer: 'sea_ice', year: 2050, story: 'arctic_amoc_europe' }, 'story: Arctic sea ice'],
+          [4500, { region: 'north_atlantic', layer: 'currents', year: 2085 }, 'story: North Atlantic circulation'],
+          [9000, { region: 'europe', layer: 'temperature', year: 2100, story: null }, 'story: assessed European context'],
+        ];
     storyTimers.current = steps.map(([delay, patch, action]) => window.setTimeout(() => {
       mutate(sceneRef.current.revision, action, (current) => ({ ...current, ...patch }), 'story');
     }, delay));
