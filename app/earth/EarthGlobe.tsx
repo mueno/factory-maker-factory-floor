@@ -374,12 +374,14 @@ function createRuntime(canvas: HTMLCanvasElement): GlobeRuntime {
       const particle = runtime.currentParticles[i];
       if (!reducedMotion) {
         const factor = particle.scenarioSensitive ? runtime.currentSpeedFactor : 1;
-        particle.progress = (particle.progress + dt * particle.speed * factor) % 1;
+        const nextProgress = particle.progress + dt * particle.speed * factor;
+        particle.progress = Number.isFinite(nextProgress) ? ((nextProgress % 1) + 1) % 1 : 0;
       }
       const curve = runtime.curves[particle.curveIndex];
-      const tailProgress = Math.max(0, particle.progress - particle.trail);
-      const tail = curve.getPointAt(tailProgress);
-      const head = curve.getPointAt(particle.progress);
+      const headProgress = Math.min(0.999999, particle.progress);
+      const tailProgress = Math.max(0, headProgress - particle.trail);
+      const tail = curve.getPoint(tailProgress);
+      const head = curve.getPoint(headProgress);
       positions.setXYZ(i * 2, tail.x, tail.y, tail.z);
       positions.setXYZ(i * 2 + 1, head.x, head.y, head.z);
     }

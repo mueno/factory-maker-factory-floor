@@ -43,6 +43,9 @@ const COPY = {
     listen: 'Speak',
     stop: 'Stop listening',
     topics: 'Explore a connection',
+    layers: 'What to see',
+    viewpoints: 'Viewpoint',
+    timeline: 'Year',
     coupled: 'The whole picture',
     temperature: 'Warming',
     sea_ice: 'Arctic ice',
@@ -84,6 +87,8 @@ const COPY = {
     assessedRange: 'IPCC assessed range',
     explanatory: 'Explanatory view',
     amocReduced: 'Reduced display based on the scenario-specific CMIP6 ensemble mean',
+    currentVisualBasis: 'Flow paths are a conceptual guide, not measured OSCAR vectors',
+    lightingNote: 'The day/night boundary is presentation lighting, not the current solar position.',
     seaLevelReduced: 'Reduced-order display',
     observed: 'Observed',
     illustrative: 'Illustrative',
@@ -97,6 +102,9 @@ const COPY = {
     listen: '声で尋ねる',
     stop: '音声入力を止める',
     topics: 'つながりから探す',
+    layers: '見るテーマ',
+    viewpoints: '視点',
+    timeline: '年代',
     coupled: '地球全体のつながり',
     temperature: '気温の変化',
     sea_ice: '北極の海氷',
@@ -138,6 +146,8 @@ const COPY = {
     assessedRange: 'IPCCの評価幅',
     explanatory: '変化を理解するための表示',
     amocReduced: 'シナリオ別CMIP6モデル平均をもとにした簡略表示',
+    currentVisualBasis: '流線の経路は位置関係を伝える概念表示で、OSCARの実測ベクトルではありません',
+    lightingNote: '昼夜の境界は画面演出用の固定照明で、現在の太陽位置を示すものではありません。',
     seaLevelReduced: '簡略表示',
     observed: '観測値',
     illustrative: '説明用表示',
@@ -153,6 +163,22 @@ const TOPIC_REGIONS: Record<LayerId, RegionId> = {
   sea_level: 'global',
 };
 
+const LAYER_GLYPHS: Record<LayerId, string> = {
+  coupled: '◎',
+  temperature: '↗',
+  sea_ice: '◇',
+  currents: '≈',
+  sea_level: '⌁',
+};
+
+const REGION_GLYPHS: Record<RegionId, string> = {
+  global: '◉',
+  arctic: '△',
+  north_atlantic: '≈',
+  europe: '◇',
+  japan: '○',
+};
+
 function fixed(value: number, digits = 1) {
   return value.toFixed(digits);
 }
@@ -164,7 +190,7 @@ function narration(scene: EarthSceneState, locale: 'en' | 'ja') {
       return `${scene.year}年の北極海氷を、NSIDCの観測値とIPCCの「ほぼ氷のない北極海」の基準から描いています。特定の年を予測したものではありません。`;
     }
     if (scene.layer === 'currents') {
-      return `${SCENARIOS[scene.scenario].label}のCMIP6モデル平均では、AMOCは2100年までに約${AMOC_2100_BY_SCENARIO[scene.scenario]}％弱まります。この画面の${scene.year}年値は、その平均値と2025年を直線で結んだ簡略表示で、不確実性の幅を示すものではありません。`;
+      return `${SCENARIOS[scene.scenario].label}のCMIP6モデル平均では、AMOCは2100年までに約${AMOC_2100_BY_SCENARIO[scene.scenario]}％弱まります。この画面の${scene.year}年値は、その平均値と2025年を直線で結んだ簡略表示です。光の流線は海流の位置関係を伝える概念表示で、実測ベクトルではありません。`;
     }
     if (scene.layer === 'sea_level') {
       return `${scene.year}年の世界平均海面は、基準期間より約${fixed(science.seaLevel.best, 2)}m高い表示です。IPCCの評価幅は${fixed(science.seaLevel.low, 2)}〜${fixed(science.seaLevel.high, 2)}mです。地域の浸水を予測したものではありません。`;
@@ -175,7 +201,7 @@ function narration(scene: EarthSceneState, locale: 'en' | 'ja') {
     return `${scene.year}年の地球を、気温、北極海氷、大西洋の循環、海面上昇のつながりとして見ています。気になる変化を選ぶか、言葉で尋ねてください。`;
   }
   if (scene.layer === 'sea_ice') return `The ${scene.year} Arctic sea-ice view connects NSIDC observations with the IPCC practically ice-free threshold. It is not a year-specific forecast.`;
-  if (scene.layer === 'currents') return `The CMIP6 ensemble mean for ${SCENARIOS[scene.scenario].label} shows about ${AMOC_2100_BY_SCENARIO[scene.scenario]} percent AMOC weakening by 2100. This ${scene.year} value linearly connects 2025 with that scenario-specific mean; it is a reduced display, not an uncertainty range.`;
+  if (scene.layer === 'currents') return `The CMIP6 ensemble mean for ${SCENARIOS[scene.scenario].label} shows about ${AMOC_2100_BY_SCENARIO[scene.scenario]} percent AMOC weakening by 2100. This ${scene.year} value linearly connects 2025 with that mean. The luminous paths are a conceptual circulation guide, not measured vectors.`;
   if (scene.layer === 'sea_level') return `Global mean sea level is shown at about ${fixed(science.seaLevel.best, 2)} metres in ${scene.year}, with an assessed range of ${fixed(science.seaLevel.low, 2)}–${fixed(science.seaLevel.high, 2)} metres. This is not local inundation.`;
   if (scene.layer === 'temperature') return `Under ${SCENARIOS[scene.scenario].label}, global surface temperature in ${scene.year} is assessed at about ${fixed(science.temperature.best)}°C above 1850–1900, with a range of ${fixed(science.temperature.low)}–${fixed(science.temperature.high)}°C.`;
   return `Explore how warming, Arctic sea ice, Atlantic circulation, and sea-level rise connect in ${scene.year}. Choose a topic or ask in your own words.`;
@@ -479,13 +505,25 @@ export function EarthExperience() {
           </div>
         </header>
 
-        <nav className="terra-topics" aria-label={t.topics}>
-          {layerKeys.map((layer) => (
-            <button key={layer} className={scene.layer === layer ? 'active' : ''} onClick={() => chooseTopic(layer)}>
-              {t[layer]}
-            </button>
-          ))}
-        </nav>
+        <aside className="terra-layer-panel" aria-label={t.layers}>
+          <div className="terra-layer-heading">
+            <span>{t.layers}</span>
+            <small>{t[scene.layer]}</small>
+          </div>
+          <nav aria-label={t.topics}>
+            {layerKeys.map((layer) => (
+              <button
+                key={layer}
+                className={scene.layer === layer ? 'active' : ''}
+                onClick={() => chooseTopic(layer)}
+                aria-pressed={scene.layer === layer}
+              >
+                <span aria-hidden="true">{LAYER_GLYPHS[layer]}</span>
+                <strong>{t[layer]}</strong>
+              </button>
+            ))}
+          </nav>
+        </aside>
 
         <section className="terra-story-card" aria-live="polite">
           <div className="terra-context-line">
@@ -502,16 +540,11 @@ export function EarthExperience() {
             {scene.layer === 'sea_level' && <><strong>+{fixed(science.seaLevel.best, 2)}m</strong><span>{fixed(science.seaLevel.low, 2)}–{fixed(science.seaLevel.high, 2)}m · {t.assessedRange}</span><em className="terra-basis-badge">{t.seaLevelReduced}</em></>}
             {scene.layer === 'coupled' && <><strong>+{fixed(science.temperature.best)}°C</strong><span>{source}</span></>}
           </div>
+          {scene.layer === 'currents' && <small className="terra-visual-basis">{t.currentVisualBasis}</small>}
           <button className="terra-inline-link" onClick={() => setDrawer('data')}>{t.data} <span aria-hidden="true">↗</span></button>
         </section>
 
         {!globeReady && <div className="terra-error">{t.renderUnavailable}</div>}
-
-        <div className="terra-zoom" aria-label={locale === 'ja' ? '地球の表示倍率' : 'Globe zoom controls'}>
-          <button onClick={() => globeRef.current?.zoomIn()} aria-label={t.zoomIn} title={t.zoomIn}>+</button>
-          <button onClick={() => globeRef.current?.zoomOut()} aria-label={t.zoomOut} title={t.zoomOut}>−</button>
-          <button onClick={() => globeRef.current?.resetView()} aria-label={t.reset} title={t.reset}>⌾</button>
-        </div>
 
         {showGestureHint && (
           <button className="terra-gesture-hint" onClick={() => setShowGestureHint(false)}>
@@ -519,33 +552,73 @@ export function EarthExperience() {
           </button>
         )}
 
-        <section className="terra-conductor" aria-label={locale === 'ja' ? '地球への質問' : 'Ask Earth'}>
+        <section className="terra-conductor" aria-label={locale === 'ja' ? '地球を操作する' : 'Control Earth'}>
           <div className="terra-suggestions">
             <button onClick={() => executeCommand(locale === 'ja' ? '2050年の北極を見せて' : 'Show the Arctic in 2050')}>
               {locale === 'ja' ? '2050年の北極を見る' : 'See the Arctic in 2050'}
             </button>
             <button onClick={() => host.playStory('arctic_amoc_europe', sceneRef.current.revision)}>{t.story}</button>
           </div>
-          <div className="terra-prompt-shell">
-            <button className={`terra-mic ${listening ? 'active' : ''}`} onClick={toggleListening} aria-label={listening ? t.stop : t.listen}>
-              {listening ? '■' : '●'}
-            </button>
-            <form onSubmit={(event) => { event.preventDefault(); executeCommand(command); }}>
-              <input value={command} onChange={(event) => setCommand(event.target.value)} placeholder={t.prompt} aria-label={t.prompt} />
-              <button type="submit" aria-label={t.explore}>↑</button>
-            </form>
-            <button className="terra-control-pill" onClick={() => setDrawer('conditions')}>
-              {scene.year} · {SCENARIOS[scene.scenario].name[locale]}
-            </button>
-            <button className="terra-control-pill" onClick={() => setDrawer('display')}>{t[scene.style]}</button>
+          <div className="terra-hud-deck">
+            <div className="terra-view-row">
+              <span className="terra-control-label">{t.viewpoints}</span>
+              <div className="terra-view-options">
+                {regionKeys.map((region) => (
+                  <button
+                    key={region}
+                    className={scene.region === region ? 'active' : ''}
+                    onClick={() => host.focus(region, sceneRef.current.revision)}
+                    aria-pressed={scene.region === region}
+                  >
+                    <span aria-hidden="true">{REGION_GLYPHS[region]}</span>
+                    <strong>{t[region]}</strong>
+                  </button>
+                ))}
+              </div>
+              <div className="terra-camera-actions" aria-label={locale === 'ja' ? '地球の表示倍率' : 'Globe zoom controls'}>
+                <button onClick={() => globeRef.current?.zoomOut()} aria-label={t.zoomOut} title={t.zoomOut}>−</button>
+                <button onClick={() => globeRef.current?.resetView()} aria-label={t.reset} title={t.reset}>⌾</button>
+                <button onClick={() => globeRef.current?.zoomIn()} aria-label={t.zoomIn} title={t.zoomIn}>＋</button>
+              </div>
+            </div>
+
+            <div className="terra-time-row">
+              <div className="terra-time-value"><span>{t.timeline}</span><strong>{displayedYear}</strong></div>
+              <input
+                aria-label={locale === 'ja' ? '表示する年代' : 'Year to display'}
+                type="range"
+                min="2030"
+                max="2100"
+                step="5"
+                value={displayedYear}
+                onChange={(event) => scheduleYearChange(Number(event.target.value))}
+              />
+              <button className="terra-assumption-button" onClick={() => setDrawer('conditions')}>
+                <span>{SCENARIOS[scene.scenario].label}</span>
+                <strong>{SCENARIOS[scene.scenario].name[locale]}</strong>
+              </button>
+            </div>
+
+            <div className="terra-prompt-shell">
+              <button className={`terra-mic ${listening ? 'active' : ''}`} onClick={toggleListening} aria-label={listening ? t.stop : t.listen}>
+                {listening ? '■' : '●'}
+              </button>
+              <form onSubmit={(event) => { event.preventDefault(); executeCommand(command); }}>
+                <input value={command} onChange={(event) => setCommand(event.target.value)} placeholder={t.prompt} aria-label={t.prompt} />
+                <button type="submit" aria-label={t.explore}>↑</button>
+              </form>
+              <button className="terra-presentation-button" onClick={() => setDrawer('display')}>
+                <span aria-hidden="true">{scene.style === 'cinematic' ? '◌' : scene.style === 'scientific' ? '⌁' : '✦'}</span>
+                <strong>{t[scene.style]}</strong>
+              </button>
+              <div className={`terra-engine-state ${modelContextReady ? 'connected' : ''}`}>
+                <i aria-hidden="true" />
+                <span>{modelContextReady ? t.connected : t.disconnected}</span>
+              </div>
+            </div>
           </div>
           <p className={notice ? 'is-notice' : ''}>{notice || t.hint}</p>
         </section>
-
-        <div className={`terra-agent-status ${modelContextReady ? 'connected' : ''}`}>
-          <i aria-hidden="true" />
-          <span>{modelContextReady ? t.connected : t.disconnected}</span>
-        </div>
 
         {drawer !== 'closed' && (
           <>
@@ -578,6 +651,7 @@ export function EarthExperience() {
                       </a>
                     ))}
                   </div>
+                  <p className="terra-visual-note">{t.lightingNote}</p>
                   <p className="terra-limit">{t.limitation}</p>
                   <details className="terra-activity">
                     <summary>{t.activity}</summary>
