@@ -28,10 +28,10 @@ export function SiteFooter() {
   return (
     <footer className="site-footer">
       <div className="site-footer-main">
-        <Link className="footer-brand" href="/" aria-label="Adlib home">
-          <span className="brand-mark">A</span>
+        <Link className="footer-brand" href="/" aria-label="TERRA home">
+          <span className="brand-mark">T</span>
           <span>
-            <strong>ADLIB</strong>
+            <strong>TERRA</strong>
             <small>{copy.tag}</small>
           </span>
         </Link>

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google';
 import { LocaleProvider } from './i18n';
 import './globals.css';
 import './cinematic.css';
+import './earth/earth.css';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -15,32 +16,23 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Adlib — Improvised UI Runtime',
+  title: 'TERRA — Voice-Driven Earth Engine',
   description:
-    'Say what you need and an app appears. Every next screen is improvised at runtime by a brain — your WebMCP browser agent or an API. No app code is written in advance.',
+    'Speak to a living 3D Earth. People and browser agents explore assessed climate evidence through the same camera, layers, scenarios, and timeline.',
   icons: {
     icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
     shortcut: '/favicon.svg',
   },
   openGraph: {
-    title: 'Adlib — Improvised UI Runtime',
+    title: 'TERRA — Voice-Driven Earth Engine',
     description:
-      'Apps are born at runtime: a WebMCP-native stage where the UI is improvised on every interaction.',
+      'A WebMCP-native scientific stage where evidence moves as you speak.',
     type: 'website',
-    images: [
-      {
-        url: '/factory-floor-social-preview.png',
-        width: 1536,
-        height: 1024,
-        alt: 'Adlib: a live stage where a brain improvises the user interface at runtime.',
-      },
-    ],
   },
   twitter: {
-    card: 'summary_large_image',
-    title: 'Adlib — Improvised UI Runtime',
-    description: 'A WebMCP-native stage where every next screen is improvised at runtime.',
-    images: ['/factory-floor-social-preview.png'],
+    card: 'summary',
+    title: 'TERRA — Voice-Driven Earth Engine',
+    description: 'A WebMCP-native scientific stage where evidence moves as you speak.',
   },
 };
 
