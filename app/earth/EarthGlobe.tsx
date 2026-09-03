@@ -150,6 +150,7 @@ function currentCurves() {
 }
 
 function createRuntime(canvas: HTMLCanvasElement): GlobeRuntime {
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -257,13 +258,18 @@ function createRuntime(canvas: HTMLCanvasElement): GlobeRuntime {
   const animate = (now: number) => {
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
-    runtime.earth.quaternion.slerp(runtime.targetQuaternion, 1 - Math.pow(0.0004, dt));
-    runtime.camera.position.z += (runtime.targetDistance - runtime.camera.position.z) * (1 - Math.pow(0.002, dt));
-    runtime.evidence.material.uniforms.uTime.value = now / 1000;
+    if (reducedMotion) {
+      runtime.earth.quaternion.copy(runtime.targetQuaternion);
+      runtime.camera.position.z = runtime.targetDistance;
+    } else {
+      runtime.earth.quaternion.slerp(runtime.targetQuaternion, 1 - Math.pow(0.0004, dt));
+      runtime.camera.position.z += (runtime.targetDistance - runtime.camera.position.z) * (1 - Math.pow(0.002, dt));
+    }
+    runtime.evidence.material.uniforms.uTime.value = reducedMotion ? 0 : now / 1000;
     const positions = runtime.currentPoints.geometry.attributes.position as THREE.BufferAttribute;
     for (let i = 0; i < positions.count; i += 1) {
       const curve = runtime.curves[i % runtime.curves.length];
-      const progress = (i / positions.count * runtime.curves.length + now / 9500) % 1;
+      const progress = (i / positions.count * runtime.curves.length + (reducedMotion ? 0 : now / 9500)) % 1;
       const pointOnCurve = curve.getPointAt(progress);
       positions.setXYZ(i, pointOnCurve.x, pointOnCurve.y, pointOnCurve.z);
     }
