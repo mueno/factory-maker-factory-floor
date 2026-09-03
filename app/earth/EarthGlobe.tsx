@@ -72,6 +72,23 @@ function latLon(lat: number, lon: number, radius = 1) {
   );
 }
 
+function focusQuaternion(lat: number, lon: number) {
+  const phi = THREE.MathUtils.degToRad(lat);
+  const theta = THREE.MathUtils.degToRad(lon);
+  const center = latLon(lat, lon).normalize();
+  const north = new THREE.Vector3(
+    -Math.sin(phi) * Math.cos(theta),
+    Math.cos(phi),
+    Math.sin(phi) * Math.sin(theta),
+  ).normalize();
+  const east = new THREE.Vector3(-Math.sin(theta), 0, -Math.cos(theta)).normalize();
+  // Map the local east/north/center frame to screen right/up/front. This keeps
+  // the selected region centred without the arbitrary roll produced by a
+  // single-vector rotation.
+  const localFrame = new THREE.Matrix4().makeBasis(east, north, center);
+  return new THREE.Quaternion().setFromRotationMatrix(localFrame).invert();
+}
+
 function loadColorTexture(path: string, anisotropy: number) {
   const texture = new THREE.TextureLoader().load(path);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -480,8 +497,7 @@ function createRuntime(canvas: HTMLCanvasElement): GlobeRuntime {
 
 function applyScene(runtime: GlobeRuntime, scene: EarthSceneState) {
   const region = REGIONS[scene.region];
-  const center = latLon(region.lat, region.lon).normalize();
-  runtime.targetQuaternion.copy(new THREE.Quaternion().setFromUnitVectors(center, new THREE.Vector3(0, 0, 1)));
+  runtime.targetQuaternion.copy(focusQuaternion(region.lat, region.lon));
   runtime.targetDistance = region.distance;
   const science = sceneScience(scene);
   const modes = { temperature: 1, sea_ice: 2, currents: 2, sea_level: 3, coupled: 4 };

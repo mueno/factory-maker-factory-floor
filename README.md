@@ -7,7 +7,7 @@ Built for the [WebMCP Challenge](https://webmcp.devpost.com/).
 ## The experience
 
 - A Three.js globe is the interface, rather than an illustration beside a chat window.
-- Camera flights connect the Arctic, North Atlantic, Europe, Japan, and the whole Earth.
+- Camera flights connect the Arctic, North Atlantic, Europe, Japan, and the whole Earth. Regional focus uses a north-up geographic frame, preserving the verified texture-longitude alignment without arbitrary camera roll.
 - NASA Blue Marble, Black Marble, and cloud imagery form the visible Earth, night-light, and atmosphere layers. The day/night boundary uses a fixed presentation light and does not represent the current time.
 - Ocean-current streaks stay attached to the sphere and follow open streamlines generated from the July 2014 mean of six OSCAR 5-day composites. The public NOAA CoastWatch mirror is the bundled sample source; NASA PO.DAAC is the canonical archive. The displayed AMOC weakening value remains a separate scenario-specific CMIP6 ensemble mean.
 - Scientific, cinematic, and plain-language views change presentation without changing values.
