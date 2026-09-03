@@ -23,7 +23,7 @@ TERRA registers six tools in the page. They are not a server-side MCP wrapper an
 | `earth_set_layer` | Change the visible scientific evidence layer |
 | `earth_set_scenario` | Set an IPCC AR6 scenario and year |
 | `earth_set_render_style` | Change presentation while preserving the values |
-| `earth_play_story` | Play an interruptible Arctic-to-AMOC evidence sequence |
+| `earth_play_story` | Play an interruptible Arctic-to-AMOC or global sea-level evidence sequence |
 
 Every mutation requires the revision returned by `earth_read_scene`. A stale write is rejected with `revision_conflict`. Human controls call the same host operations as the agent, so the screen is the shared state—not a separate visualization of hidden agent work.
 

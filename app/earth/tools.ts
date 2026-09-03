@@ -79,7 +79,7 @@ export function buildEarthTools(host: EarthToolHost): EarthToolDefinition[] {
     {
       name: 'earth_set_layer',
       title: 'Change the scientific layer',
-      description: 'Switch the visible evidence layer on the shared globe: assessed warming, observed Arctic sea ice, an AMOC projection, global mean sea level, or a coupled overview.',
+      description: 'Switch the visible evidence layer on the shared globe: assessed warming, observed Arctic sea ice, a scenario-specific CMIP6 ensemble-mean AMOC display, global mean sea level, or a coupled overview.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -128,7 +128,7 @@ export function buildEarthTools(host: EarthToolHost): EarthToolDefinition[] {
     {
       name: 'earth_play_story',
       title: 'Play a guided Earth story',
-      description: 'Start a short, interruptible camera-and-layer sequence. arctic_amoc_europe follows observed sea-ice loss into the assessed AMOC weakening range; sea_level compares IPCC global mean sea-level ranges without claiming local inundation.',
+      description: 'Start a short, interruptible camera-and-layer sequence. arctic_amoc_europe connects observed sea-ice loss with a scenario-specific CMIP6 ensemble-mean AMOC display; sea_level compares IPCC global mean sea-level ranges without claiming local inundation.',
       inputSchema: {
         type: 'object',
         properties: {
