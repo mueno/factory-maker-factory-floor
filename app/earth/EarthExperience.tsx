@@ -87,6 +87,7 @@ const COPY = {
     seaLevelReduced: 'Reduced-order display',
     observed: 'Observed',
     illustrative: 'Illustrative',
+    renderUnavailable: '3D rendering is unavailable. The scientific information remains available.',
   },
   ja: {
     brand: 'TERRA',
@@ -140,6 +141,7 @@ const COPY = {
     seaLevelReduced: '簡略表示',
     observed: '観測値',
     illustrative: '説明用表示',
+    renderUnavailable: '3D表示を利用できません。科学情報は引き続き確認できます。',
   },
 } as const;
 
@@ -503,7 +505,7 @@ export function EarthExperience() {
           <button className="terra-inline-link" onClick={() => setDrawer('data')}>{t.data} <span aria-hidden="true">↗</span></button>
         </section>
 
-        {!globeReady && <div className="terra-error">3D rendering is unavailable. The scientific information remains available.</div>}
+        {!globeReady && <div className="terra-error">{t.renderUnavailable}</div>}
 
         <div className="terra-zoom" aria-label={locale === 'ja' ? '地球の表示倍率' : 'Globe zoom controls'}>
           <button onClick={() => globeRef.current?.zoomIn()} aria-label={t.zoomIn} title={t.zoomIn}>+</button>
