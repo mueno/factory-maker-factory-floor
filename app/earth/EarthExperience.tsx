@@ -217,11 +217,13 @@ export function EarthExperience() {
   const [globeReady, setGlobeReady] = useState(true);
   const [drawer, setDrawer] = useState<Drawer>('closed');
   const [showGestureHint, setShowGestureHint] = useState(true);
+  const [draftYear, setDraftYear] = useState<number | null>(null);
   const sceneRef = useRef(scene);
   const globeRef = useRef<EarthGlobeHandle | null>(null);
   const recognitionRef = useRef<Recognition | null>(null);
   const audioRef = useRef<{ context: AudioContext; gain: GainNode; pan: StereoPannerNode; oscillator: OscillatorNode } | null>(null);
   const storyTimers = useRef<number[]>([]);
+  const yearCommitTimer = useRef<number | null>(null);
   const playStoryRef = useRef<(story: NonNullable<EarthSceneState['story']>) => void>(() => undefined);
   const localeRef = useRef(locale);
   const narrationRef = useRef(narrationOn);
@@ -314,6 +316,21 @@ export function EarthExperience() {
 
   useEffect(() => { playStoryRef.current = startStory; }, [startStory]);
   useEffect(() => () => storyTimers.current.forEach(window.clearTimeout), []);
+  useEffect(() => () => {
+    if (yearCommitTimer.current !== null) window.clearTimeout(yearCommitTimer.current);
+  }, []);
+
+  const scheduleYearChange = useCallback((year: number) => {
+    setDraftYear(year);
+    if (yearCommitTimer.current !== null) window.clearTimeout(yearCommitTimer.current);
+    const expectedRevision = sceneRef.current.revision;
+    const scenario = sceneRef.current.scenario;
+    yearCommitTimer.current = window.setTimeout(() => {
+      yearCommitTimer.current = null;
+      host.setScenario(scenario, year, expectedRevision);
+      setDraftYear(null);
+    }, 250);
+  }, [host]);
 
   const chooseTopic = useCallback((layer: LayerId) => {
     mutate(sceneRef.current.revision, `explore_topic(${layer})`, (current) => ({
@@ -435,6 +452,7 @@ export function EarthExperience() {
   const regionKeys: RegionId[] = ['global', 'arctic', 'north_atlantic', 'europe', 'japan'];
   const styleKeys: RenderStyle[] = ['cinematic', 'scientific', 'storybook'];
   const source = currentSourceFor(scene.layer);
+  const displayedYear = draftYear ?? scene.year;
   const seaIceBasisLabel = scene.year <= 2025 ? t.observed : t.illustrative;
   const modelContextReady = registered.length === EARTH_TOOL_NAMES.length;
 
@@ -569,15 +587,15 @@ export function EarthExperience() {
                 <div className="terra-drawer-content">
                   <p className="terra-drawer-lead">{t.conditionsIntro}</p>
                   <section className="terra-year-control">
-                    <div><span>{t.conditions}</span><strong>{scene.year}</strong></div>
+                    <div><span>{t.conditions}</span><strong>{displayedYear}</strong></div>
                     <input
                       aria-label={locale === 'ja' ? '表示する年代' : 'Year to display'}
                       type="range"
                       min="2030"
                       max="2100"
                       step="5"
-                      value={scene.year}
-                      onChange={(event) => host.setScenario(scene.scenario, Number(event.target.value), sceneRef.current.revision)}
+                      value={displayedYear}
+                      onChange={(event) => scheduleYearChange(Number(event.target.value))}
                     />
                     <div className="terra-range-labels"><span>2030</span><span>2100</span></div>
                   </section>
