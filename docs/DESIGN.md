@@ -252,3 +252,32 @@ Mode A 環境での直接操作の扱い（3段構え）:
 - Chrome 149 origin trial: https://ppc.land/chrome-149-origin-trial-puts-webmcp-in-developers-hands-at-last/
 - API移行（document.modelContext）: https://www.spronta.com/blog/state-of-webmcp-july-2026/
 - idiomorph: https://github.com/bigskysoftware/idiomorph
+
+## 13. 世界レイヤー（Solaris様式の採用方式 — 決定記録）
+
+Runway Solaris様式の「ピクセルが有機的に応答する」体験について、3方式を比較検討した。
+
+| 方式 | 内容 | Codex Site（静的/エッジ配信・GPUバックエンドなし）での可否 |
+|---|---|---|
+| A: WebRTC/WebTransport + サーバー推論 | GPUクラスタでフレーム生成しストリーミング | ❌ 常駐GPUサーバーが持てない |
+| B: WebGPU オンデバイス | 訪問者の端末GPUで全計算 | ✅ **採用** — 静的配信のみで成立 |
+| C: 低解像度ストリーミング + クライアント超解像 | サーバー生成 + WebGPU超解像 | ❌ Aと同じくサーバー推論が必要 |
+
+### 採用形（パターンB）
+
+拡散モデルのオンデバイス実行は解像度/fpsが実用に達しないため、パターンBは
+「リアルタイム流体シミュレーション世界」として実装した（`app/adlib/world.ts`）。
+決定論が必要なアプリ本体はDOMレイヤー（Adlibステージ）が担い、世界レイヤーは
+Solarisの核心である**入力のシグナル化**だけを引き受ける。
+
+| 入力 | 世界へのシグナル |
+|---|---|
+| ポインタ移動（ページ上・即興アプリ内とも） | 運動量の注入（速度場スプラット） |
+| 即興UIのクリック / 送信 | 光の脈動（シアン / コーラル） |
+| 頭脳の思考中（busy） | 環境乱流（ゆっくり旋回する流れ） |
+| 新しい画面の到着 | 金色のブルーム |
+
+- 実装: WebGPUコンピュートシェーダ（移流→スプラット→渦度→圧力射影→染料移流→提示）
+- シミュレーション解像度 320×180、Jacobi 18反復、60fps目標
+- WebGPU非対応 / prefers-reduced-motion では自動的に無効化し、静的スキンへフォールバック
+- トグル（世界レイヤー ON/OFF）は localStorage に保存

@@ -15,6 +15,8 @@ export type StageHandle = {
 
 type StageProps = {
   onEvent: (event: Omit<AdlibEvent, 'seq' | 'ts'>) => void;
+  // Viewport-normalized pointer signal originating inside the frame (world layer input).
+  onPointer?: (nx: number, ny: number, dx: number, dy: number) => void;
   busy: boolean;
   busyLabel: string;
   emptyLabel: string;
@@ -128,6 +130,20 @@ const STAGE_RUNTIME = `
       post({ t: 'event', type: 'input', action: actionOf(el), target: describe(el) });
     }, 300));
   });
+  // Pointer motion over the improvised app becomes a world signal (throttled).
+  var lastPointer = { x: 0, y: 0, at: 0 };
+  document.addEventListener('pointermove', function (event) {
+    var now = Date.now();
+    if (now - lastPointer.at < 33) return;
+    var width = Math.max(1, document.documentElement.clientWidth);
+    var heightPx = Math.max(1, document.documentElement.scrollHeight);
+    var nx = Math.min(1, Math.max(0, event.clientX / width));
+    var ny = Math.min(1, Math.max(0, event.clientY / heightPx));
+    var dx = lastPointer.at ? nx - lastPointer.x : 0;
+    var dy = lastPointer.at ? ny - lastPointer.y : 0;
+    lastPointer = { x: nx, y: ny, at: now };
+    post({ t: 'pointer', nx: nx, ny: ny, dx: dx, dy: dy });
+  }, { passive: true });
   new ResizeObserver(height).observe(document.documentElement);
   post({ t: 'ready' });
 })();
@@ -148,7 +164,7 @@ function isValidEventPayload(value: unknown): value is { t: 'event'; type: Adlib
   return true;
 }
 
-export const Stage = forwardRef<StageHandle, StageProps>(function Stage({ onEvent, busy, busyLabel, emptyLabel }, ref) {
+export const Stage = forwardRef<StageHandle, StageProps>(function Stage({ onEvent, onPointer, busy, busyLabel, emptyLabel }, ref) {
   const frameRef = useRef<HTMLIFrameElement>(null);
   const readyRef = useRef(false);
   const pendingRef = useRef<{ html: string; mode: 'replace' | 'morph' } | null>(null);
@@ -186,6 +202,20 @@ export const Stage = forwardRef<StageHandle, StageProps>(function Stage({ onEven
         frame.style.height = `${Math.max(320, Math.min(6000, data.px))}px`;
         return;
       }
+      if (data?.t === 'pointer' && onPointer) {
+        const nx = Number(data.nx); const ny = Number(data.ny);
+        const dx = Number(data.dx); const dy = Number(data.dy);
+        if (![nx, ny, dx, dy].every(Number.isFinite)) return;
+        // Map frame-local normalized coords into viewport-normalized coords.
+        const rect = frame.getBoundingClientRect();
+        const width = Math.max(1, window.innerWidth);
+        const height = Math.max(1, window.innerHeight);
+        const vx = (rect.left + Math.min(1, Math.max(0, nx)) * rect.width) / width;
+        const vy = (rect.top + Math.min(1, Math.max(0, ny)) * rect.height) / height;
+        if (vx < -0.1 || vx > 1.1 || vy < -0.1 || vy > 1.1) return;
+        onPointer(vx, vy, Math.max(-0.08, Math.min(0.08, dx * (rect.width / width))), Math.max(-0.08, Math.min(0.08, dy * (rect.height / height))));
+        return;
+      }
       if (isValidEventPayload(data)) {
         // Defense in depth: re-cap sizes host-side even though the frame runtime caps them too.
         const formData = data.formData
@@ -206,7 +236,7 @@ export const Stage = forwardRef<StageHandle, StageProps>(function Stage({ onEven
     ping();
     const pinger = window.setInterval(() => { if (readyRef.current) window.clearInterval(pinger); else ping(); }, 250);
     return () => { window.removeEventListener('message', listener); window.clearInterval(pinger); };
-  }, [onEvent, send]);
+  }, [onEvent, onPointer, send]);
 
   return (
     <div className={`adlib-stage ${busy ? 'busy' : ''}`}>

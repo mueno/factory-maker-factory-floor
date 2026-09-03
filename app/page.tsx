@@ -14,6 +14,10 @@ import { buildOutline, sanitizeStageHtml } from './adlib/sanitize';
 import { Stage, type StageHandle } from './adlib/stage';
 import { applyBrainResult, clearPersisted, emptyApp, persist, recordEvent, restore, undo, type AdlibApp } from './adlib/store';
 import { ADLIB_TOOL_NAMES, buildAdlibTools, getModelContext } from './adlib/tools';
+import { WorldLayer } from './adlib/world-layer';
+import type { WorldHandle } from './adlib/world';
+
+const WORLD_PREF_KEY = 'adlib-world-v1';
 
 export default function Page(props: { searchParams?: Promise<Record<string, string | string[] | undefined>> | Record<string, string | string[] | undefined> }) {
   const raw = props.searchParams;
@@ -38,6 +42,10 @@ function AdlibHome({ forceScript = false }: { forceScript?: boolean }) {
   const [proxyReady, setProxyReady] = useState(false);
   const [registeredTools, setRegisteredTools] = useState<string[]>([]);
   const [showBackstage, setShowBackstage] = useState(false);
+  const [worldOn, setWorldOn] = useState(true);
+  const [worldSupported, setWorldSupported] = useState<boolean | null>(null);
+  const worldRef = useRef<WorldHandle | null>(null);
+  const stagePointerRef = useRef({ x: 0.5, y: 0.45 });
   const stageRef = useRef<StageHandle>(null);
   const appRef = useRef(app);
   const localeRef = useRef(locale);
@@ -46,6 +54,25 @@ function AdlibHome({ forceScript = false }: { forceScript?: boolean }) {
   const brains = useMemo(() => ({ proxy: new ProxyBrain(), script: new ScriptedBrain() }), []);
 
   useEffect(() => { localeRef.current = locale; }, [locale]);
+
+  // World layer preference + signals (Solaris pattern B, on-device only).
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time preference read at mount
+    try { if (window.localStorage.getItem(WORLD_PREF_KEY) === '0') setWorldOn(false); } catch { /* private mode */ }
+  }, []);
+  useEffect(() => { worldRef.current?.setBusy(busy); }, [busy]);
+  const toggleWorld = useCallback(() => {
+    setWorldOn((value) => {
+      try { window.localStorage.setItem(WORLD_PREF_KEY, value ? '0' : '1'); } catch { /* private mode */ }
+      return !value;
+    });
+  }, []);
+  const onWorldCapability = useCallback((supported: boolean) => setWorldSupported(supported), []);
+  const onWorldHandle = useCallback((handle: WorldHandle | null) => { worldRef.current = handle; }, []);
+  const onStagePointer = useCallback((nx: number, ny: number, dx: number, dy: number) => {
+    stagePointerRef.current = { x: nx, y: ny };
+    worldRef.current?.pointer(nx, ny, dx, dy);
+  }, []);
 
   const commit = useCallback((next: AdlibApp) => {
     appRef.current = next;
@@ -94,6 +121,8 @@ function AdlibHome({ forceScript = false }: { forceScript?: boolean }) {
     const next = applyBrainResult(appRef.current, { ...result, html: clean.html }, mode);
     commit({ ...next, brain });
     stageRef.current?.apply(clean.html, mode);
+    // A new screen arriving is the strongest signal the world receives.
+    worldRef.current?.pulse(0.5, 0.4, mode === 'replace' ? 1.4 : 0.8, 'gold');
     return null;
   }, [commit]);
 
@@ -138,7 +167,9 @@ function AdlibHome({ forceScript = false }: { forceScript?: boolean }) {
   const onStageEvent = useCallback((partial: Omit<AdlibEvent, 'seq' | 'ts'>) => {
     const { app: next } = recordEvent(appRef.current, partial);
     commit(next);
+    const point = stagePointerRef.current;
     if (partial.type === 'input') return; // typing is context, not a turn trigger
+    worldRef.current?.pulse(point.x, point.y, partial.type === 'submit' ? 1.1 : 0.55, partial.type === 'submit' ? 'coral' : 'cyan');
     const brain = directBrainFor(next);
     if (brain) void improvise(brain, null);
   }, [commit, directBrainFor, improvise]);
@@ -219,9 +250,11 @@ function AdlibHome({ forceScript = false }: { forceScript?: boolean }) {
 
   const activeBrain: BrainKind = app.brain ?? (mcpSupported ? 'webmcp' : proxyReady ? 'proxy' : 'script');
   const hasApp = Boolean(app.html);
+  const worldActive = worldOn && worldSupported !== false;
 
   return (
-    <main className={`app-shell adlib-shell lang-${locale} ${hasApp ? 'has-app' : 'stage-0'}`}>
+    <main className={`app-shell adlib-shell lang-${locale} ${hasApp ? 'has-app' : 'stage-0'} ${worldActive && worldSupported ? 'world-on' : ''}`}>
+      <WorldLayer active={worldActive} onCapability={onWorldCapability} onHandle={onWorldHandle} />
       <header className="product-header">
         <div className="product-brand" aria-label="Adlib"><span className="brand-symbol">Ad</span><span><b>ADLIB</b><small>{t.brandTag}</small></span></div>
         <div className="header-controls"><LanguageSwitch /><button className="backstage-toggle" type="button" aria-expanded={showBackstage} onClick={() => setShowBackstage((value) => !value)}>{t.backstage}</button></div>
@@ -260,11 +293,16 @@ function AdlibHome({ forceScript = false }: { forceScript?: boolean }) {
           {hasApp && <span className="adlib-turns">{app.turns} {t.turn}</span>}
           {hasApp && <button className="adlib-quiet" type="button" disabled={!app.snapshots.length || busy} onClick={undoStep}>↶ {t.undo}</button>}
           {hasApp && <button className="adlib-quiet danger" type="button" onClick={reset}>{t.reset}</button>}
+          {worldSupported !== false && (
+            <button className={`adlib-quiet adlib-world-toggle ${worldActive && worldSupported ? 'on' : ''}`} type="button" title={t.worldNote} onClick={toggleWorld}>
+              ◍ {t.worldLabel}: {worldOn ? t.worldOn : t.worldOff}
+            </button>
+          )}
         </div>
         {notice && <p className="adlib-notice" role="status">{notice}</p>}
         {warnings.length > 0 && <p className="adlib-warnings">{t.sanitizeWarn}: {warnings.slice(0, 3).join(' / ')}</p>}
 
-        <Stage ref={stageRef} onEvent={onStageEvent} busy={busy} busyLabel={t.stageBusy} emptyLabel={t.stageEmpty} />
+        <Stage ref={stageRef} onEvent={onStageEvent} onPointer={onStagePointer} busy={busy} busyLabel={t.stageBusy} emptyLabel={t.stageEmpty} />
 
         <p className="adlib-mode-note">{mcpSupported ? t.brainNoteWebmcp : activeBrain === 'script' ? t.brainNoteScript : t.unsupported}</p>
 

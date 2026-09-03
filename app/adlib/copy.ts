@@ -38,6 +38,10 @@ export const ADLIB_COPY = {
     dataNote: '入力はこのブラウザとAPI経由の頭脳にのみ送られます。個人情報・機密情報は入力しないでください。',
     unsupported: 'WebMCP対応ブラウザで開くと、ブラウザ内のAIが頭脳になれます。',
     toolsRegistered: '個のツールを document.modelContext に登録済み',
+    worldLabel: '世界レイヤー',
+    worldOn: 'ON',
+    worldOff: 'OFF',
+    worldNote: 'ポインタと操作が、端末のGPUで即興される流体世界へのシグナルになります（Solarisパターン B・全処理オンデバイス）。',
   },
   en: {
     brandTag: 'Say it, and it becomes an app',
@@ -74,6 +78,10 @@ export const ADLIB_COPY = {
     dataNote: 'Input goes only to this browser and the API-side brain. Do not enter personal or confidential information.',
     unsupported: 'Open in a WebMCP-capable browser to let the in-browser AI be the brain.',
     toolsRegistered: 'tools registered on document.modelContext',
+    worldLabel: 'World layer',
+    worldOn: 'ON',
+    worldOff: 'OFF',
+    worldNote: 'Pointer motion and app interactions become signals to a fluid world improvised on your GPU (Solaris pattern B, fully on-device).',
   },
 } as const;
 

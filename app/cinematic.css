@@ -1449,3 +1449,27 @@ html:has(main.service-preview), html:has(main.service-preview) body {
 @media (prefers-reduced-motion: reduce) {
   .creation-blueprint .orbit, .creation-burst i, .creation-burst span { animation: none !important; }
 }
+
+/* World layer — Solaris pattern B: on-device WebGPU fluid, static-host friendly */
+.adlib-world-canvas {
+  display: block;
+  height: 100%;
+  inset: 0;
+  pointer-events: none;
+  position: fixed;
+  width: 100%;
+  z-index: -1;
+}
+.adlib-shell.world-on { background: transparent; }
+.adlib-shell.world-on::before { opacity: .45; }
+/* The canvas sits at z:-1; every opaque layer above it must clear when the
+   world is on (body backgrounds paint above negative-z descendants). */
+html:has(main.world-on), html:has(main.world-on) body { background: transparent; }
+.adlib-world-toggle.on {
+  background: rgba(86, 216, 238, .14);
+  border-color: rgba(86, 216, 238, .55);
+  color: #eafcff;
+}
+@media (prefers-reduced-motion: reduce) {
+  .adlib-world-canvas { display: none; }
+}
