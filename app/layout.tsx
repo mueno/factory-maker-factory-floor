@@ -31,7 +31,7 @@ export const metadata: Metadata = {
         url: '/factory-floor-social-preview.png',
         width: 1536,
         height: 1024,
-        alt: 'Factory Maker Factory Floor, where a human and an agent build and verify a WebMCP app together.',
+        alt: 'A playful Factory Maker workshop where a person and a friendly AI robot build a service together.',
       },
     ],
   },
