@@ -26,10 +26,15 @@ type GlobeProps = {
   onCapability?: (ready: boolean) => void;
 };
 
+export type PinProjection = { id: string; xPct: number; yPct: number; front: boolean };
+
 export type EarthGlobeHandle = {
   zoomIn: () => void;
   zoomOut: () => void;
   resetView: () => void;
+  // Screen positions (0..1 of canvas) of pinned lat/lon points, updated each
+  // frame via the callback. Returns a disposer.
+  trackPins: (pins: Array<{ id: string; lat: number; lon: number }>, onProject: (points: PinProjection[]) => void) => () => void;
 };
 
 type GlobeRuntime = {
@@ -52,6 +57,13 @@ type GlobeRuntime = {
   currentSpeedFactor: number;
   targetQuaternion: THREE.Quaternion;
   targetDistance: number;
+  // Eased temperature-pattern targets so timeline playback looks smooth even
+  // though scene commits are stepped.
+  warmMixTarget: number;
+  warmScaleTarget: number;
+  seaLevelTarget: number;
+  pins: Array<{ id: string; vector: THREE.Vector3 }>;
+  onProject: ((points: PinProjection[]) => void) | null;
   frame: number;
   observer: ResizeObserver;
   destroy: () => void;
@@ -556,7 +568,10 @@ function createRuntime(canvas: HTMLCanvasElement): GlobeRuntime {
     renderer, composer, bloomPass, camera, earth, globe, nightShade, nightLights, clouds, evidence, ice,
     coast, warmTextures,
     currentStreaks, currentParticles, curves, currentSpeedFactor: 1,
-    targetQuaternion, targetDistance: 4.8, frame: 0, observer,
+    targetQuaternion, targetDistance: 4.8,
+    warmMixTarget: 0.5, warmScaleTarget: 1, seaLevelTarget: 0,
+    pins: [], onProject: null,
+    frame: 0, observer,
     destroy: () => {},
   };
   let raf = 0;
@@ -573,6 +588,26 @@ function createRuntime(canvas: HTMLCanvasElement): GlobeRuntime {
     }
     runtime.evidence.material.uniforms.uTime.value = reducedMotion ? 0 : now / 1000;
     if (!reducedMotion) runtime.clouds.rotation.y += dt * 0.012;
+
+    // Ease the data-driven uniforms toward their targets (smooth playback).
+    const ease = 1 - Math.pow(0.002, dt);
+    const eu = runtime.evidence.material.uniforms;
+    eu.uWarmMix.value += (runtime.warmMixTarget - eu.uWarmMix.value) * ease;
+    eu.uWarmScale.value += (runtime.warmScaleTarget - eu.uWarmScale.value) * ease;
+    const cu = runtime.coast.material.uniforms;
+    cu.uSeaLevelM.value += (runtime.seaLevelTarget - cu.uSeaLevelM.value) * ease;
+
+    // Project pinned lat/lon points to screen for the tracking popups.
+    if (runtime.onProject && runtime.pins.length) {
+      const projected: PinProjection[] = runtime.pins.map((pin) => {
+        const world = pin.vector.clone().applyQuaternion(runtime.earth.quaternion);
+        const toCamera = new THREE.Vector3().subVectors(runtime.camera.position, world).normalize();
+        const front = world.clone().normalize().dot(toCamera) > -0.15;
+        const ndc = world.project(runtime.camera);
+        return { id: pin.id, xPct: (ndc.x * 0.5 + 0.5), yPct: (-ndc.y * 0.5 + 0.5), front };
+      });
+      runtime.onProject(projected);
+    }
     const positions = runtime.currentStreaks.geometry.attributes.position as THREE.BufferAttribute;
     for (let i = 0; i < runtime.currentParticles.length; i += 1) {
       const particle = runtime.currentParticles[i];
@@ -649,8 +684,10 @@ function applyScene(runtime: GlobeRuntime, scene: EarthSceneState) {
   const blendedMean = lowMean + (highMean - lowMean) * mix;
   evidenceUniforms.uWarmLow.value = runtime.warmTextures[scenarios[lowIndex]];
   evidenceUniforms.uWarmHigh.value = runtime.warmTextures[scenarios[highIndex]];
-  evidenceUniforms.uWarmMix.value = mix;
-  evidenceUniforms.uWarmScale.value = blendedMean > 0.05 ? targetWarming / blendedMean : 0;
+  // Eased in the animate loop for smooth timeline playback. At a bracket
+  // boundary mix is 0 or 1, so the pair swap is continuous.
+  runtime.warmMixTarget = mix;
+  runtime.warmScaleTarget = blendedMean > 0.05 ? targetWarming / blendedMean : 0;
 
   runtime.evidence.visible = scene.layer === 'temperature' || scene.layer === 'sea_level' || scene.layer === 'coupled'
     || (scene.layer === 'currents' && scene.style !== 'scientific');
@@ -659,7 +696,7 @@ function applyScene(runtime: GlobeRuntime, scene: EarthSceneState) {
 
   // Sea-level layer: coastal-zone glow scaled by assessed GMSL (not inundation).
   runtime.coast.visible = scene.layer === 'sea_level' || scene.layer === 'coupled';
-  runtime.coast.material.uniforms.uSeaLevelM.value = science.seaLevel.best;
+  runtime.seaLevelTarget = science.seaLevel.best;
 
   // Sea ice: for observed years blend between decadal masks; for the future
   // hold the 2025 mask and contract the visible edge toward the pole.
@@ -718,6 +755,16 @@ export const EarthGlobe = forwardRef<EarthGlobeHandle, GlobeProps>(function Eart
     resetView: () => {
       const runtime = runtimeRef.current;
       if (runtime) applyScene(runtime, latestSceneRef.current);
+    },
+    trackPins: (pins, onProject) => {
+      const runtime = runtimeRef.current;
+      if (!runtime) return () => undefined;
+      runtime.pins = pins.map((pin) => ({ id: pin.id, vector: latLon(pin.lat, pin.lon, 1.02) }));
+      runtime.onProject = onProject;
+      return () => {
+        const current = runtimeRef.current;
+        if (current) { current.pins = []; current.onProject = null; }
+      };
     },
   }), []);
 

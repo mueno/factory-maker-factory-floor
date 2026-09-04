@@ -618,6 +618,75 @@ html:has(.terra-shell) body {
   background: rgba(104, 248, 238, .09);
   color: var(--cyan);
 }
+.terra-camera-actions button.active {
+  background: rgba(104, 248, 238, .16);
+  color: var(--cyan);
+}
+
+/* Timeline play/pause */
+.terra-play {
+  align-items: center;
+  background: rgba(104, 248, 238, .1);
+  border: 1px solid rgba(104, 248, 238, .4);
+  border-radius: 50%;
+  color: var(--cyan);
+  cursor: pointer;
+  display: flex;
+  flex: 0 0 auto;
+  font-size: 12px;
+  height: 34px;
+  justify-content: center;
+  margin-right: 10px;
+  width: 34px;
+}
+.terra-play.active {
+  background: rgba(255, 216, 135, .16);
+  border-color: rgba(255, 216, 135, .6);
+  color: var(--gold);
+}
+.terra-play:hover { background: rgba(104, 248, 238, .2); }
+
+/* Region pins — tracking popups projected from the globe */
+.terra-pin-layer {
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 5;
+}
+.terra-pin {
+  left: 50%;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  transition: opacity .25s ease;
+  will-change: left, top;
+}
+.terra-pin-dot {
+  background: var(--cyan);
+  border: 2px solid rgba(4, 12, 24, .9);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(104, 248, 238, .7);
+  display: block;
+  height: 12px;
+  left: -6px;
+  position: absolute;
+  top: -6px;
+  width: 12px;
+}
+.terra-pin-card {
+  backdrop-filter: blur(14px);
+  background: rgba(6, 17, 32, .82);
+  border: 1px solid rgba(104, 248, 238, .35);
+  border-radius: 12px;
+  left: 12px;
+  min-width: 96px;
+  padding: 8px 11px;
+  position: absolute;
+  top: -14px;
+}
+.terra-pin-card strong { color: #eaf6ff; display: block; font-size: 12px; }
+.terra-pin-card b { color: var(--cyan); display: block; font-size: 20px; font-variant-numeric: tabular-nums; line-height: 1.1; margin-top: 2px; }
+.terra-pin-card small { color: #7f97ab; display: block; font-size: 8px; letter-spacing: .04em; margin-top: 1px; }
 
 .terra-time-row {
   background: rgba(0, 5, 15, .26);

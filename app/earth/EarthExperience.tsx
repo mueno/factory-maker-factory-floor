@@ -3,11 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { LanguageSwitch, useLocale } from '../i18n';
 import { SiteFooter } from '../site-footer';
-import { EarthGlobe, type EarthGlobeHandle } from './EarthGlobe';
+import { EarthGlobe, type EarthGlobeHandle, type PinProjection } from './EarthGlobe';
 import {
   AMOC_2100_BY_SCENARIO,
   createInitialScene,
-  REGIONS,
   SCENARIOS,
   SCIENCE_SOURCES,
   sceneScience,
@@ -18,6 +17,20 @@ import {
   type ScenarioId,
 } from './science';
 import { buildEarthTools, EARTH_TOOL_NAMES, getModelContext } from './tools';
+import { createAudioEngine } from './audio';
+import { ensurePatternsLoaded, localWarmingAt } from './pattern-sampler';
+
+const YEAR_MIN = 1980;
+const YEAR_MAX = 2100;
+
+// Preset teleconnection pins: the Arctic warms fastest; pinning distant cities
+// shows how far the signal reaches. Values shown are local warming ΔT sampled
+// from the same CMIP6 pattern the globe renders.
+const PIN_PRESETS: Pin[] = [
+  { id: 'arctic', lat: 80, lon: 0, label: { en: 'Arctic', ja: '北極' } },
+  { id: 'tokyo', lat: 35.7, lon: 139.7, label: { en: 'Tokyo', ja: '東京' } },
+  { id: 'london', lat: 51.5, lon: -0.1, label: { en: 'London', ja: 'ロンドン' } },
+];
 
 type RecognitionEvent = Event & { results: ArrayLike<{ 0: { transcript: string } }> };
 type Recognition = {
@@ -32,7 +45,8 @@ type Recognition = {
 };
 type RecognitionConstructor = new () => Recognition;
 type Drawer = 'closed' | 'data' | 'conditions' | 'display';
-type MutationMode = 'interaction' | 'story' | 'start-story';
+type MutationMode = 'interaction' | 'story' | 'start-story' | 'playback';
+type Pin = { id: string; lat: number; lon: number; label: { en: string; ja: string } };
 
 const COPY = {
   en: {
@@ -67,6 +81,8 @@ const COPY = {
     reset: 'Return to selected place',
     zoomIn: 'Zoom in',
     zoomOut: 'Zoom out',
+    play: 'Play the timeline', pause: 'Pause the timeline',
+    pins: 'Pin regions to compare', pinLocalWarming: 'local warming',
     interaction: 'Drag to rotate · Scroll or pinch to zoom',
     audioOn: 'Ambient sound on',
     audioOff: 'Turn on ambient sound',
@@ -131,6 +147,8 @@ const COPY = {
     reset: '選んだ場所に戻る',
     zoomIn: '拡大する',
     zoomOut: '縮小する',
+    play: 'タイムラインを再生', pause: 'タイムラインを停止',
+    pins: '地域をピン留めして比較', pinLocalWarming: 'この地点の昇温',
     interaction: 'ドラッグで回す · スクロール／ピンチで拡大・縮小',
     audioOn: '環境音 ON',
     audioOff: '環境音をつける',
@@ -191,6 +209,31 @@ const REGION_GLYPHS: Record<RegionId, string> = {
 
 function fixed(value: number, digits = 1) {
   return value.toFixed(digits);
+}
+
+// Spoken narration: the on-screen text plus a sentence of assessed context
+// ("plus alpha"), NASA-explainer style. Everything stays backed by the data
+// already shown and keeps the same disclaimers.
+function spokenNarration(scene: EarthSceneState, locale: 'en' | 'ja'): string {
+  const base = narration(scene, locale);
+  const science = sceneScience(scene);
+  const extraJa: Partial<Record<LayerId, string>> = {
+    temperature: '陸地は海より、そして北極は世界平均より速く暖まります。年代を進めると、その差が地図の色に広がっていくのが分かります。',
+    sea_ice: '白い海氷は太陽光を反射します。氷が減るほど暗い海面が熱を吸収し、北極の昇温をさらに加速させます。',
+    currents: '大西洋の循環が弱まると、北ヨーロッパへ運ばれる熱が減り、遠く離れた地域の気候にも影響します。',
+    sea_level: '海面上昇は世界の平均値です。実際の影響は、地盤の高さや高潮によって地域ごとに大きく異なります。',
+    coupled: '気温・海氷・海流・海面は互いに結びついています。ひとつの変化が、地球の反対側の気候まで動かします。',
+  };
+  const extraEn: Partial<Record<LayerId, string>> = {
+    temperature: 'Land warms faster than ocean, and the Arctic faster than the global average. As you move the year, that contrast spreads across the map.',
+    sea_ice: 'Bright sea ice reflects sunlight. As it retreats, darker open water absorbs more heat, accelerating Arctic warming further.',
+    currents: 'A weaker Atlantic circulation carries less heat toward northern Europe, reaching climates far from the ocean itself.',
+    sea_level: 'Sea-level rise here is a global mean. Local impact depends strongly on land elevation and storm surge.',
+    coupled: 'Temperature, sea ice, currents, and sea level are linked — one change can move the climate on the far side of the planet.',
+  };
+  void science;
+  const extra = (locale === 'ja' ? extraJa : extraEn)[scene.layer];
+  return extra ? `${base} ${extra}` : base;
 }
 
 function narration(scene: EarthSceneState, locale: 'en' | 'ja') {
@@ -267,10 +310,16 @@ export function EarthExperience() {
   const [drawer, setDrawer] = useState<Drawer>('closed');
   const [showGestureHint, setShowGestureHint] = useState(true);
   const [draftYear, setDraftYear] = useState<number | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const [pinsOn, setPinsOn] = useState(false);
+  const [patternsReady, setPatternsReady] = useState(false);
   const sceneRef = useRef(scene);
   const globeRef = useRef<EarthGlobeHandle | null>(null);
   const recognitionRef = useRef<Recognition | null>(null);
-  const audioRef = useRef<{ context: AudioContext; gain: GainNode; pan: StereoPannerNode; oscillator: OscillatorNode } | null>(null);
+  const audioEngineRef = useRef<ReturnType<typeof createAudioEngine> | null>(null);
+  const playTimer = useRef<number | null>(null);
+  const stopPlaybackRef = useRef<() => void>(() => undefined);
+  const pinRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const storyTimers = useRef<number[]>([]);
   const yearCommitTimer = useRef<number | null>(null);
   const playStoryRef = useRef<(story: NonNullable<EarthSceneState['story']>) => void>(() => undefined);
@@ -288,7 +337,7 @@ export function EarthExperience() {
   const speak = useCallback((next: EarthSceneState) => {
     if (!narrationRef.current || typeof speechSynthesis === 'undefined') return;
     speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(narration(next, localeRef.current));
+    const utterance = new SpeechSynthesisUtterance(spokenNarration(next, localeRef.current));
     utterance.lang = localeRef.current === 'ja' ? 'ja-JP' : 'en-US';
     utterance.rate = 0.96;
     speechSynthesis.speak(utterance);
@@ -307,7 +356,7 @@ export function EarthExperience() {
   ) => {
     const current = sceneRef.current;
     if (expectedRevision !== current.revision) return { ok: false, error: 'revision_conflict', current_revision: current.revision };
-    if (mode !== 'story') cancelPendingStory();
+    if (mode !== 'story' && mode !== 'playback') cancelPendingStory();
     const changed = change(current);
     const next = {
       ...changed,
@@ -317,8 +366,12 @@ export function EarthExperience() {
     };
     sceneRef.current = next;
     setScene(next);
-    setLogs((items) => [`${action} → r${next.revision}`, ...items].slice(0, 6));
-    window.setTimeout(() => speak(next), 500);
+    // Timeline playback steps every few hundred ms; suppress the per-step log
+    // and speech so it does not spam. The globe still eases smoothly.
+    if (mode !== 'playback') {
+      setLogs((items) => [`${action} → r${next.revision}`, ...items].slice(0, 6));
+      window.setTimeout(() => speak(next), 500);
+    }
     return { ok: true, scene: next, science: sceneScience(next) };
   }, [cancelPendingStory, speak]);
 
@@ -370,6 +423,7 @@ export function EarthExperience() {
   }, []);
 
   const scheduleYearChange = useCallback((year: number) => {
+    stopPlaybackRef.current();
     setDraftYear(year);
     if (yearCommitTimer.current !== null) window.clearTimeout(yearCommitTimer.current);
     const expectedRevision = sceneRef.current.revision;
@@ -382,6 +436,7 @@ export function EarthExperience() {
   }, [host]);
 
   const chooseTopic = useCallback((layer: LayerId) => {
+    stopPlaybackRef.current();
     mutate(sceneRef.current.revision, `explore_topic(${layer})`, (current) => ({
       ...current,
       layer,
@@ -389,6 +444,57 @@ export function EarthExperience() {
       story: null,
     }));
   }, [mutate]);
+
+  // Timeline playback: advance the year in 2-year steps toward 2100, committing
+  // each through 'playback' (no per-step log/speech). Loops back to the start.
+  const stopPlayback = useCallback(() => {
+    if (playTimer.current !== null) { window.clearTimeout(playTimer.current); playTimer.current = null; }
+    setPlaying(false);
+  }, []);
+  const togglePlay = useCallback(() => {
+    if (playing) { stopPlayback(); return; }
+    cancelPendingStory();
+    setPlaying(true);
+    if (sceneRef.current.year >= YEAR_MAX) {
+      mutate(sceneRef.current.revision, 'timeline_reset(1980)', (current) => ({ ...current, year: YEAR_MIN }), 'playback');
+    }
+    const step = () => {
+      const current = sceneRef.current;
+      const nextYear = Math.min(YEAR_MAX, current.year + 2);
+      mutate(current.revision, `timeline_play(${nextYear})`, (scene0) => ({ ...scene0, year: nextYear }), 'playback');
+      if (nextYear >= YEAR_MAX) {
+        playTimer.current = null;
+        setPlaying(false);
+        window.setTimeout(() => speak(sceneRef.current), 300); // narrate once at the end
+        return;
+      }
+      playTimer.current = window.setTimeout(step, 420);
+    };
+    playTimer.current = window.setTimeout(step, 420);
+  }, [playing, stopPlayback, cancelPendingStory, mutate, speak]);
+
+  // Any manual interaction stops playback so the two don't fight.
+  useEffect(() => { stopPlaybackRef.current = stopPlayback; }, [stopPlayback]);
+
+  // Region pins: load pattern textures, register pin tracking with the globe,
+  // and update the local-warming readouts on scene change.
+  useEffect(() => { if (pinsOn) void ensurePatternsLoaded().then(() => setPatternsReady(true)); }, [pinsOn]);
+  useEffect(() => {
+    if (!pinsOn || !globeReady) return;
+    const globe = globeRef.current;
+    if (!globe) return;
+    const onProject = (points: PinProjection[]) => {
+      for (const point of points) {
+        const el = pinRefs.current.get(point.id);
+        if (!el) continue;
+        el.style.left = `${point.xPct * 100}%`;
+        el.style.top = `${point.yPct * 100}%`;
+        el.style.opacity = point.front ? '1' : '0';
+        el.style.pointerEvents = point.front ? 'auto' : 'none';
+      }
+    };
+    return globe.trackPins(PIN_PRESETS.map(({ id, lat, lon }) => ({ id, lat, lon })), onProject);
+  }, [pinsOn, globeReady]);
 
   const executeCommand = useCallback((raw: string) => {
     const value = raw.trim().toLowerCase();
@@ -456,44 +562,32 @@ export function EarthExperience() {
   }, [executeCommand, listening, locale]);
 
   const toggleAudio = useCallback(async () => {
-    if (audioRef.current) {
-      const active = !audioOn;
-      audioRef.current.gain.gain.setTargetAtTime(active ? 0.025 : 0, audioRef.current.context.currentTime, 0.08);
-      setAudioOn(active);
-      return;
+    if (!audioEngineRef.current) audioEngineRef.current = createAudioEngine();
+    const engine = audioEngineRef.current;
+    const next = !audioOn;
+    if (next) {
+      await engine.start();
+      engine.setEnabled(true);
+      engine.update(sceneRef.current, sceneScience(sceneRef.current).globalWarming.value);
+    } else {
+      engine.setEnabled(false);
     }
-    const context = new AudioContext();
-    const oscillator = context.createOscillator();
-    const filter = context.createBiquadFilter();
-    const gain = context.createGain();
-    const pan = context.createStereoPanner();
-    oscillator.type = 'sine';
-    oscillator.frequency.value = 92;
-    filter.type = 'lowpass';
-    filter.frequency.value = 260;
-    gain.gain.value = 0.025;
-    oscillator.connect(filter).connect(gain).connect(pan).connect(context.destination);
-    oscillator.start();
-    audioRef.current = { context, gain, pan, oscillator };
-    setAudioOn(true);
+    setAudioOn(next);
   }, [audioOn]);
 
+  // Ambient bed follows the scene; a soft swell marks each transition.
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    const frequency = scene.region === 'arctic' ? 68 : scene.layer === 'currents' ? 116 : 92;
-    audio.oscillator.frequency.setTargetAtTime(frequency, audio.context.currentTime, 0.8);
-    audio.pan.pan.setTargetAtTime(Math.max(-0.8, Math.min(0.8, REGIONS[scene.region].lon / 180)), audio.context.currentTime, 0.8);
+    const engine = audioEngineRef.current;
+    if (!engine || !engine.isEnabled()) return;
+    engine.update(scene, sceneScience(scene).globalWarming.value);
+    engine.swell();
   }, [scene]);
 
   useEffect(() => () => {
     recognitionRef.current?.stop();
     speechSynthesis?.cancel();
-    const audio = audioRef.current;
-    if (audio) {
-      audio.oscillator.stop();
-      void audio.context.close();
-    }
+    audioEngineRef.current?.stop();
+    if (playTimer.current !== null) window.clearTimeout(playTimer.current);
   }, []);
 
   const science = sceneScience(scene);
@@ -571,6 +665,24 @@ export function EarthExperience() {
 
         {!globeReady && <div className="terra-error">{t.renderUnavailable}</div>}
 
+        {pinsOn && globeReady && (
+          <div className="terra-pin-layer" aria-hidden="true">
+            {PIN_PRESETS.map((pin) => {
+              const local = patternsReady ? localWarmingAt(pin.lat, pin.lon, scene.scenario, scene.year) : null;
+              return (
+                <div key={pin.id} className="terra-pin" ref={(el) => { if (el) pinRefs.current.set(pin.id, el); else pinRefs.current.delete(pin.id); }}>
+                  <span className="terra-pin-dot" />
+                  <div className="terra-pin-card">
+                    <strong>{pin.label[locale]}</strong>
+                    <b>{local === null ? '…' : `+${fixed(local)}°C`}</b>
+                    <small>{t.pinLocalWarming}</small>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         {showGestureHint && (
           <button className="terra-gesture-hint" onClick={() => setShowGestureHint(false)}>
             <span aria-hidden="true">↔</span>{t.interaction}
@@ -601,6 +713,7 @@ export function EarthExperience() {
                 ))}
               </div>
               <div className="terra-camera-actions" aria-label={locale === 'ja' ? '地球の表示倍率' : 'Globe zoom controls'}>
+                <button className={pinsOn ? 'active' : ''} onClick={() => setPinsOn((value) => !value)} aria-pressed={pinsOn} title={t.pins}>◎</button>
                 <button onClick={() => globeRef.current?.zoomOut()} aria-label={t.zoomOut} title={t.zoomOut}>−</button>
                 <button onClick={() => globeRef.current?.resetView()} aria-label={t.reset} title={t.reset}>⌾</button>
                 <button onClick={() => globeRef.current?.zoomIn()} aria-label={t.zoomIn} title={t.zoomIn}>＋</button>
@@ -608,6 +721,9 @@ export function EarthExperience() {
             </div>
 
             <div className="terra-time-row">
+              <button className={`terra-play ${playing ? 'active' : ''}`} onClick={togglePlay} aria-label={playing ? t.pause : t.play} title={playing ? t.pause : t.play}>
+                {playing ? '❚❚' : '▶'}
+              </button>
               <div className="terra-time-value"><span>{t.timeline}</span><strong>{displayedYear}</strong></div>
               <input
                 aria-label={locale === 'ja' ? '表示する年代' : 'Year to display'}
