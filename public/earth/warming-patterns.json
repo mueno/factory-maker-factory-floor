@@ -1,0 +1,70 @@
+{
+  "variable": "tas (near-surface air temperature)",
+  "delta": "2081-2100 minus 1995-2014, CMIP6 multi-model mean, member r1i1p1f1",
+  "encode": {
+    "vmin_c": -1.0,
+    "vmax_c": 12.0,
+    "formula": "delta_c = vmin + pixel/255 * (vmax - vmin)"
+  },
+  "projection": "equirectangular, lon -180..180 left-to-right, lat 90..-90 top-to-bottom",
+  "source": "CMIP6 via gs://cmip6 (ESGF mirror), CC BY 4.0",
+  "scenarios": {
+    "ssp1_26": {
+      "file": "warming-pattern-ssp1_26.png",
+      "global_mean_delta_c": 1.692,
+      "models": [
+        "ACCESS-CM2",
+        "ACCESS-ESM1-5",
+        "BCC-CSM2-MR",
+        "CAMS-CSM1-0",
+        "CAS-ESM2-0",
+        "CESM2-WACCM",
+        "CIESM",
+        "CMCC-CM2-SR5",
+        "CMCC-ESM2",
+        "CanESM5",
+        "EC-Earth3",
+        "EC-Earth3-Veg"
+      ],
+      "model_count": 12
+    },
+    "ssp2_45": {
+      "file": "warming-pattern-ssp2_45.png",
+      "global_mean_delta_c": 2.829,
+      "models": [
+        "ACCESS-CM2",
+        "BCC-CSM2-MR",
+        "CAMS-CSM1-0",
+        "CAS-ESM2-0",
+        "CESM2-WACCM",
+        "CIESM",
+        "CMCC-CM2-SR5",
+        "CMCC-ESM2",
+        "CanESM5",
+        "EC-Earth3",
+        "EC-Earth3-CC",
+        "EC-Earth3-Veg"
+      ],
+      "model_count": 12
+    },
+    "ssp5_85": {
+      "file": "warming-pattern-ssp5_85.png",
+      "global_mean_delta_c": 5.235,
+      "models": [
+        "ACCESS-CM2",
+        "ACCESS-ESM1-5",
+        "AWI-CM-1-1-MR",
+        "BCC-CSM2-MR",
+        "CAMS-CSM1-0",
+        "CAS-ESM2-0",
+        "CESM2-WACCM",
+        "CIESM",
+        "CMCC-CM2-SR5",
+        "CMCC-ESM2",
+        "CanESM5",
+        "E3SM-1-1"
+      ],
+      "model_count": 12
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "channels": {
+    "R": 1980,
+    "G": 2000,
+    "B": 2010,
+    "A": 2020
+  },
+  "month": "September (annual minimum)",
+  "source": "NSIDC Sea Ice Index v4 (G02135) monthly extent polygons",
+  "citation": "Fetterer et al. (2025). Sea Ice Index, Version 4. NSIDC. doi:10.7265/a98x-0f50",
+  "projection": "equirectangular, lon -180..180 left-to-right, lat 90..-90 top-to-bottom",
+  "note": "Observed September extent (>=15% concentration). 2025 mask ships separately."
+}

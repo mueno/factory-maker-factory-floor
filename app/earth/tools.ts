@@ -95,12 +95,12 @@ export function buildEarthTools(host: EarthToolHost): EarthToolDefinition[] {
     {
       name: 'earth_set_scenario',
       title: 'Set an IPCC scenario and year',
-      description: 'Set one assessed IPCC AR6 emissions scenario and a year from 2030 to 2100. The page displays assessment ranges and marks reduced-order interpolation rather than presenting it as a regional forecast.',
+      description: 'Set one assessed IPCC AR6 emissions scenario and a year from 1980 to 2100 (pre-2025 shows the observed record and the sea-ice badge reads Observed; only future years are marked reduced-order or illustrative). The page displays assessment ranges and marks reduced-order interpolation rather than presenting it as a regional forecast.',
       inputSchema: {
         type: 'object',
         properties: {
           scenario: { type: 'string', enum: ['ssp1_26', 'ssp2_45', 'ssp5_85'] },
-          year: { type: 'integer', minimum: 2030, maximum: 2100 },
+          year: { type: 'integer', minimum: 1980, maximum: 2100 },
           expected_revision: expectedRevision,
         },
         required: ['scenario', 'year', 'expected_revision'],

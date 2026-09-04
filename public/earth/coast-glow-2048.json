@@ -1,0 +1,7 @@
+{
+  "source": "Natural Earth 50m coastline (public domain)",
+  "source_url": "https://naciscdn.org/naturalearth/50m/physical/ne_50m_coastline.zip",
+  "sigma_km": 220.0,
+  "note": "Coastal-zone emphasis distance field. Not a sea-level or inundation dataset.",
+  "projection": "equirectangular, lon -180..180 left-to-right, lat 90..-90 top-to-bottom"
+}

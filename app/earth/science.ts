@@ -130,12 +130,38 @@ function interpolateRange(a: Range, b: Range, t: number): Range {
   };
 }
 
+// Observed global surface temperature anomaly (°C above 1850–1900), decadal
+// means from IPCC AR6 WGI SPM.A.1.2 / Cross-Chapter Box 2.3 assessed record.
+// Used to drive the warming-pattern texture for the observed (pre-2025) era.
+const OBSERVED_WARMING: Array<[number, number]> = [
+  [1980, 0.35], [1990, 0.45], [2000, 0.61], [2010, 0.90], [2020, 1.09], [2025, 1.20],
+];
+
 export function temperatureForYear(scenario: ScenarioId, year: number): Range & { period: string } {
   const data = SCENARIOS[scenario].temperature;
   if (year <= 2040) return { ...data.near, period: '2021–2040' };
   if (year <= 2060) return { ...data.mid, period: '2041–2060' };
   if (year >= 2081) return { ...data.long, period: '2081–2100' };
   return { ...interpolateRange(data.mid, data.long, (year - 2060) / 21), period: 'interpolated between IPCC assessment windows' };
+}
+
+// Global-mean warming (°C above 1850–1900) used to blend the two bracketing
+// warming-pattern textures. Pre-2025 uses the assessed observational record;
+// from 2025 it follows the scenario's assessed best estimate. This is the
+// single scalar that makes the globe's temperature layer move with the slider.
+export function globalWarmingForYear(scenario: ScenarioId, year: number): { value: number; basis: 'observed' | 'assessed' } {
+  if (year <= 2025) {
+    for (let i = 0; i < OBSERVED_WARMING.length - 1; i += 1) {
+      const [y0, v0] = OBSERVED_WARMING[i];
+      const [y1, v1] = OBSERVED_WARMING[i + 1];
+      if (year <= y1) {
+        const t = y0 === y1 ? 0 : (year - y0) / (y1 - y0);
+        return { value: v0 + (v1 - v0) * Math.max(0, Math.min(1, t)), basis: 'observed' };
+      }
+    }
+    return { value: OBSERVED_WARMING[0][1], basis: 'observed' };
+  }
+  return { value: temperatureForYear(scenario, year).best, basis: 'assessed' };
 }
 
 export function seaLevelForYear(scenario: ScenarioId, year: number): Range {
@@ -194,6 +220,7 @@ export function createInitialScene(): EarthSceneState {
 export function sceneScience(scene: EarthSceneState) {
   return {
     temperature: temperatureForYear(scene.scenario, scene.year),
+    globalWarming: globalWarmingForYear(scene.scenario, scene.year),
     seaLevel: seaLevelForYear(scene.scenario, scene.year),
     amocDecline: amocForYear(scene.scenario, scene.year),
     seaIce: SEA_ICE_OBSERVATIONS,

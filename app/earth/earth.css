@@ -375,6 +375,30 @@ html:has(.terra-shell) body {
   margin-top: 10px;
   max-width: 330px;
 }
+.terra-temp-legend {
+  align-items: center;
+  display: flex;
+  gap: 7px;
+  margin-top: 8px;
+  max-width: 330px;
+}
+.terra-temp-legend i {
+  background: linear-gradient(90deg, #1c87db, #dbeff9 50%, #fa4d1f);
+  border-radius: 999px;
+  flex: 1;
+  height: 6px;
+}
+.terra-temp-legend span {
+  color: #90a6b8;
+  font-size: 8px;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+.terra-temp-legend em {
+  color: #7690a3;
+  font-size: 8px;
+  font-style: normal;
+}
 
 .terra-inline-link {
   background: none;
