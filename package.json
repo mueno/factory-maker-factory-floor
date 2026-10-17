@@ -12,7 +12,7 @@
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next"
   },
   "dependencies": {
-    "dompurify": "^3.4.14",
+    "dompurify": "^3.4.16",
     "idiomorph": "^0.7.4",
     "next": "16.3.4",
     "react": "19.2.8",
